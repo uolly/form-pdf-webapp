@@ -1,0 +1,12 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+templates/debug_compilato.pdf
+templates/modulo_con_griglia.pdf
+test-*.html
+*.log

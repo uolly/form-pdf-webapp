@@ -69,18 +69,18 @@ router.post('/submit', validateForm, async (req, res) => {
     console.log('PDF generato');
     
     // 3. Invia email con PDF allegato (commentato per ora)
-    // console.log('Inviando email...');
-    // const emailResult = await emailService.sendFormEmail(formData, pdfBuffer);
-    // console.log('Email inviata');
+     console.log('Inviando email...');
+     const emailResult = await emailService.sendFormEmail(formData, pdfBuffer);
+     console.log('Email inviata');
     
-    res.json({
-      success: true,
-      message: 'Form elaborato con successo',
-      data: {
-        sheetId: sheetResult.spreadsheetId,
-        // emailSent: emailResult.accepted.length > 0
-      }
-    });
+   res.json({
+  success: true,
+  message: 'Form elaborato con successo',
+  data: {
+    sheetId: sheetResult.spreadsheetId,
+    emailSent: emailResult.accepted.length > 0
+  }
+});
     
   } catch (error) {
     console.error('Errore nell\'elaborazione del form:', error);
