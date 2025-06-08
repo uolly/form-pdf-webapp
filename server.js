@@ -33,13 +33,15 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({
   origin: function (origin, callback) {
     // Permetti richieste da localhost per test
-    const allowedOrigins = [
-      'http://localhost:8080',
-      'http://localhost:3000',
-      'http://127.0.0.1:8080',
-      'http://127.0.0.1:3000',
-      process.env.WORDPRESS_URL
-    ];
+    // In server.js, aggiungi l'URL di Render alle origini permesse
+const allowedOrigins = [
+  'http://localhost:8080',
+  'http://localhost:3000',
+  'http://127.0.0.1:8080',
+  'http://127.0.0.1:3000',
+  process.env.WORDPRESS_URL,
+  'https://form-pdf-webapp.onrender.com' // Aggiungi il tuo URL Render qui
+];
     
     // Permetti anche richieste senza origin (es. Postman, PowerShell)
     if (!origin || allowedOrigins.includes(origin)) {
