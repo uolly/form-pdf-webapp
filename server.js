@@ -60,6 +60,10 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/form', formRoutes);
 
+// Aggiungi dopo le altre routes
+const ricevuteRoutes = require('./routes/ricevuteRoutes');
+app.use('/api/ricevute', ricevuteRoutes);
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date() });

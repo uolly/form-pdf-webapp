@@ -92,6 +92,192 @@ class EmailService {
       throw error;
     }
   }
+  
+  // Aggiungi dopo il metodo sendFormEmail esistente
+
+async sendRicevutaEmails(ricevutaData, pdfBuffer) {
+  try {
+    const pdfFileName = `ricevuta_${ricevutaData.numeroRicevuta}_${Date.now()}.pdf`;
+    
+    // 1. EMAIL AL PAGANTE
+    const userMailOptions = {
+      from: `"Agility Club Labora" <${process.env.EMAIL_FROM}>`,
+      to: ricevutaData.emailPagante,
+      subject: `Ricevuta n. ${ricevutaData.numeroRicevuta} - Agility Club Labora`,
+      html: this.generateRicevutaUserEmail(ricevutaData),
+      attachments: [
+        {
+          filename: pdfFileName,
+          content: pdfBuffer,
+          contentType: 'application/pdf'
+        }
+      ]
+    };
+
+    // 2. EMAIL AGLI AMMINISTRATORI
+    const adminEmails = process.env.EMAIL_RICEVUTE_ADMIN || process.env.EMAIL_TO;
+    const adminMailOptions = {
+      from: `"Sistema Ricevute" <${process.env.EMAIL_FROM}>`,
+      to: adminEmails,
+      subject: `[Admin] Nuova ricevuta n. ${ricevutaData.numeroRicevuta}`,
+      html: this.generateRicevutaAdminEmail(ricevutaData),
+      attachments: [
+        {
+          filename: pdfFileName,
+          content: pdfBuffer,
+          contentType: 'application/pdf'
+        }
+      ]
+    };
+
+    // Invia entrambe le email
+    const userResult = await this.transporter.sendMail(userMailOptions);
+    const adminResult = await this.transporter.sendMail(adminMailOptions);
+    
+    return {
+      success: true,
+      userMessageId: userResult.messageId,
+      adminMessageId: adminResult.messageId
+    };
+    
+  } catch (error) {
+    console.error('Errore invio email ricevuta:', error);
+    throw error;
+  }
+}
+
+// Email per il pagante
+generateRicevutaUserEmail(ricevutaData) {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background-color: #ffffff; padding: 30px; border: 1px solid #e0e0e0; }
+        .info-box { background-color: #ecf0f1; padding: 20px; border-radius: 5px; margin: 20px 0; }
+        .amount { font-size: 24px; color: #27ae60; font-weight: bold; }
+        .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #7f8c8d; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Ricevuta di Pagamento</h1>
+          <p>Agility Club Labora</p>
+        </div>
+        
+        <div class="content">
+          <p>Gentile <strong>${ricevutaData.ricevutoDa}</strong>,</p>
+          
+          <p>Confermiamo di aver ricevuto il tuo pagamento.</p>
+          
+          <div class="info-box">
+            <h3>Dettagli del pagamento:</h3>
+            <p><strong>Ricevuta n.:</strong> ${ricevutaData.numeroRicevuta}</p>
+            <p><strong>Data:</strong> ${this.formatDate(ricevutaData.dataRicevuta)}</p>
+            <p><strong>Causale:</strong> ${ricevutaData.ricevutaPer}</p>
+            <p class="amount">Importo: € ${parseFloat(ricevutaData.denaroRicevuto).toFixed(2)}</p>
+          </div>
+          
+          <p>In allegato trovi la ricevuta in formato PDF da conservare.</p>
+          
+          <p>Per qualsiasi informazione, non esitare a contattarci.</p>
+          
+          <p>Cordiali saluti,<br>
+          <strong>Agility Club Labora</strong></p>
+        </div>
+        
+        <div class="footer">
+          <p>Questa email è stata generata automaticamente dal sistema di gestione ricevute.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+// Email per gli amministratori
+generateRicevutaAdminEmail(ricevutaData) {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 700px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #34495e; color: white; padding: 20px; text-align: center; }
+        .content { background-color: #ffffff; padding: 20px; border: 1px solid #ddd; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #ddd; }
+        th { background-color: #ecf0f1; font-weight: bold; }
+        .highlight { background-color: #f39c12; color: white; padding: 5px 10px; border-radius: 3px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h2>Nuova Ricevuta Emessa - Sistema Amministrativo</h2>
+        </div>
+        
+        <div class="content">
+          <p><span class="highlight">Ricevuta n. ${ricevutaData.numeroRicevuta}</span></p>
+          
+          <table>
+            <tr>
+              <th>Campo</th>
+              <th>Valore</th>
+            </tr>
+            <tr>
+              <td>Numero Ricevuta</td>
+              <td><strong>${ricevutaData.numeroRicevuta}</strong></td>
+            </tr>
+            <tr>
+              <td>Data Ricevuta</td>
+              <td>${this.formatDate(ricevutaData.dataRicevuta)}</td>
+            </tr>
+            <tr>
+              <td>Ricevuto da</td>
+              <td>${ricevutaData.ricevutoDa}</td>
+            </tr>
+            <tr>
+              <td>Email</td>
+              <td>${ricevutaData.emailPagante}</td>
+            </tr>
+            <tr>
+              <td>Causale</td>
+              <td>${ricevutaData.ricevutaPer}</td>
+            </tr>
+            <tr>
+              <td>Modalità di Pagamento</td>
+              <td>${ricevutaData.modalitaPagamento}</td>
+            </tr>
+            <tr>
+              <td>Educatore/Tecnico</td>
+              <td>${ricevutaData.educatoreTecnico}</td>
+            </tr>
+            <tr>
+              <td>Importo</td>
+              <td style="font-size: 18px; color: #27ae60;"><strong>€ ${parseFloat(ricevutaData.denaroRicevuto).toFixed(2)}</strong></td>
+            </tr>
+          </table>
+          
+          <p><strong>Timestamp emissione:</strong> ${new Date().toLocaleString('it-IT')}</p>
+          
+          <hr>
+          
+          <p style="font-size: 12px; color: #7f8c8d;">
+            Questa email è stata inviata automaticamente dal sistema di gestione ricevute.
+            La ricevuta è stata salvata nel registro Google Sheets.
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
 
   // Email dettagliata per l'amministratore
   generateAdminEmailContent(formData) {
