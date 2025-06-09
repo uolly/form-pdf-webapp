@@ -58,7 +58,9 @@ class GoogleSheetsService {
       formData.conduttoreCane2 || '',
       
       // Consenso privacy
-      formData.consensoPrivacy ? 'Checked' : 'Not checked'
+ 	formData.consensoPrivacy ? 'Checked' : 'Not checked',
+	// Consenso social
+	formData.consensoSocial ? 'Checked' : 'Not checked'
     ]];
     
     try {

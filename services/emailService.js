@@ -287,7 +287,16 @@ class EmailService {
             </ul>
             
             <p>Per qualsiasi domanda o informazione, non esitare a contattarci.</p>
-            
+            <div class="important" style="margin-top: 30px; background-color: #e8f4fd; border: 1px solid #0073aa;">
+    <h3 style="color: #0073aa; margin-top: 0;">💰 Modalità di Pagamento</h3>
+    <p><strong>IL PAGAMENTO DELL'ISCRIZIONE E/O DEI CORSI PUÒ ESSERE EFFETTUATO PRESSO IL CENTRO OPPURE TRAMITE TRASFERIMENTO BANCARIO, CON LE SEGUENTI COORDINATE:</strong></p>
+    <div style="background: white; padding: 15px; border-radius: 5px; margin: 10px 0;">
+        <p style="margin: 5px 0;"><strong>Intestatario:</strong> A.S.D. AGILITY CLUB LA BORA</p>
+        <p style="margin: 5px 0;"><strong>IBAN:</strong> IT73V0503402200000000003040</p>
+        <p style="margin: 5px 0;"><strong>BIC/SWIFT:</strong> BAPPIT21703</p>
+    </div>
+    <p style="font-size: 14px; color: #666;">Importante: Indica nella causale il tuo nome e cognome.</p>
+</div>
             <div class="signature">
               <p>A presto al nostro centro cinofilo!</p>
               <p><strong>Il Team di Agility Club Labora</strong></p>

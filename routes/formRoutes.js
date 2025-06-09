@@ -18,7 +18,8 @@ const validateForm = [
   body('provincia').notEmpty().isLength({ min: 2, max: 2 }).isAlpha().toUpperCase().withMessage('Provincia non valida (2 lettere)'),
   body('cap').notEmpty().isPostalCode('IT').withMessage('CAP non valido'),
   body('codiceFiscale').notEmpty().isLength({ min: 16, max: 16 }).toUpperCase().withMessage('Codice fiscale non valido'),
-  body('telefono').notEmpty().isMobilePhone('it-IT').withMessage('Numero di telefono non valido'),
+  body('consensoSocial').optional().isBoolean(),
+  body('telefono').notEmpty().withMessage('Numero di telefono obbligatorio'),
   
   // Dati primo cane - tutti facoltativi
   body('nomeCane1').optional({ checkFalsy: true }).trim().escape(),
