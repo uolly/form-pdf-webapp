@@ -25,6 +25,7 @@ console.log('GOOGLE_PRIVATE_KEY first 50 chars:', process.env.GOOGLE_PRIVATE_KEY
 console.log('===================================');
 
 const formRoutes = require('./routes/formRoutes');
+const ricevuteRoutes = require('./routes/ricevuteRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -61,7 +62,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/form', formRoutes);
 
 // Aggiungi dopo le altre routes
-const ricevuteRoutes = require('./routes/ricevuteRoutes');
+
 app.use('/api/ricevute', ricevuteRoutes);
 
 // Health check
