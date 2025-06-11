@@ -1,12 +1,33 @@
+# Dipendenze
 node_modules/
+
+# Variabili ambiente
 .env
 .env.local
 .env.*.local
+
+# File di test locali
+test-*.html
+test-*.js
+comandi.txt
+
+# PDF di debug
+templates/debug_*.pdf
+
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.DS_Store
-templates/debug_compilato.pdf
-templates/modulo_con_griglia.pdf
-test-*.html
 *.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Temporanei
+*.tmp
+*.temp

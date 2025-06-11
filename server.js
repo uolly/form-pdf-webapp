@@ -1,6 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+
+// Carica .env.local in sviluppo, .env in produzione
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config({ path: '.env.local' });
+} else {
+  dotenv.config();
+}
 const { body, validationResult } = require('express-validator');
 
 // Carica le variabili d'ambiente
@@ -29,6 +36,7 @@ const ricevuteRoutes = require('./routes/ricevuteRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
 
 // Middleware
 app.use(cors({
