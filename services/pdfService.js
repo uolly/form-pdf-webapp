@@ -83,7 +83,7 @@ class PdfService {
       
       // Gestisci checkbox privacy
       checkFieldIfExists('consensoPrivacy', formData.consensoPrivacy);
-      checkFieldIfExists('consensoSocial', formData.consensoSocial);
+      checkFieldIfExists('consensoSocial', formData.consensoSocialgit );
       // Opzionale: Aggiungi data di compilazione se c'è un campo per questo
       fillFieldIfExists('dataCompilazione', new Date().toLocaleDateString('it-IT'));
       
