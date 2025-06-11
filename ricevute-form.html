@@ -55,7 +55,7 @@
 
         .rcv-header h1 {
             margin: 0;
-            font-size: 2rem;
+            font-size: 1rem;
             font-weight: 300;
         }
 
@@ -84,12 +84,18 @@
         }
 
         .rcv-section-title {
-            font-size: 1.3rem;
+            font-size: 0.1rem;
             color: var(--rcv-primary);
             margin-bottom: 20px;
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+        /* Aggiungi questa nuova regola */
+        h2.rcv-section-title {
+            font-size: 1.1rem !important;
+            font-weight: 500;
+            margin: 0;
         }
 
         .rcv-section-icon {
@@ -492,7 +498,13 @@
 
                         <div class="rcv-group">
                             <label for="educatoreTecnico" class="rcv-label rcv-required">Educatore/Tecnico</label>
-                            <input type="text" id="educatoreTecnico" name="educatoreTecnico" class="rcv-input" required placeholder="Nome educatore/tecnico">
+                            <select id="educatoreTecnico" name="educatoreTecnico" class="rcv-select" required>
+                                <option value="">Seleziona...</option>
+                                <option value="Walter">Walter</option>
+                                <option value="Luciana">Luciana</option>
+                                <option value="Nicole">Nicole</option>                             
+                                <option value="Generico">Generico</option>
+                            </select>
                         </div>
                     </div>
                 </div>
