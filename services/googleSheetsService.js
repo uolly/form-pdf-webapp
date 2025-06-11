@@ -15,7 +15,7 @@ class GoogleSheetsService {
 
   async appendData(formData) {
     const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
-    const range = 'Sheet1!A:AK'; // Aggiornato per includere tutte le colonne necessarie
+    const range = 'Iscrizioni!A:AK'; // Aggiornato per includere tutte le colonne necessarie
     
     // Prepara i valori nell'ordine corretto
     const values = [[
@@ -83,8 +83,8 @@ class GoogleSheetsService {
   // Metodo helper per creare/aggiornare gli headers nel Google Sheet
   async updateHeaders() {
     const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
-    const range = 'Sheet1!A1:AK1';
-    //const range = 'IscrizioniOnLine!A1:AK1';
+    //const range = 'Sheet1!A1:AK1';
+    const range = 'IscrizioniOnLine!A1:AK1';
     
     const headers = [
       'Data/Ora',
