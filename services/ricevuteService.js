@@ -11,7 +11,11 @@ class RicevuteService {
     });
     
     this.sheets = google.sheets({ version: 'v4', auth: this.auth });
-    this.spreadsheetId = process.env.GOOGLE_SHEETS_RICEVUTE_ID || process.env.GOOGLE_SHEETS_ID;
+    //this.spreadsheetId = process.env.GOOGLE_SHEETS_RICEVUTE_ID || process.env.GOOGLE_SHEETS_ID;
+    this.spreadsheetId = process.env.GOOGLE_SHEETS_RICEVUTE_ID
+    this.spreadsheetContattiID =  process.env.GOOGLE_SHEETS_ID
+
+   
   }
 
   // Ottieni ultimo numero ricevuta
@@ -53,16 +57,20 @@ class RicevuteService {
   // Ottieni lista contatti per autocompletamento
   async getContatti() {
     try {
+      //const response = await this.sheets.spreadsheets.values.get({
+       // spreadsheetId: this.spreadsheetId,
+       // range: 'Contatti!A2:C' // Colonne: Email, Nome, Cognome
+      //});
       const response = await this.sheets.spreadsheets.values.get({
-        spreadsheetId: this.spreadsheetId,
-        range: 'Contatti!A2:C' // Colonne: Email, Nome, Cognome
+        spreadsheetId: this.spreadsheetContattiID,
+        range: 'Soci!B2:D' // Colonne: Email, Nome, Cognome
       });
       
       const rows = response.data.values || [];
       return rows.map(row => ({
-        email: row[0] || '',
-        nome: row[1] || '',
-        cognome: row[2] || ''
+        email: row[2] || '',
+        nome: row[0] || '',
+        cognome: row[1] || ''
       })).filter(c => c.email); // Solo contatti con email
       
     } catch (error) {
