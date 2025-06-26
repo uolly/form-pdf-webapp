@@ -1,4 +1,4 @@
-<!-- Form Iscrizione Agility Club Labora - Versione Responsive -->
+<!-- Form Iscrizione Agility Club Labora - Versione Responsive con Modal -->
 <style>
     /* Reset e variabili CSS */
     :root {
@@ -87,11 +87,11 @@
     }
 
     /* Grid responsive */
-.acl-form-grid {
-    display: grid;
-    gap: 20px;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-}
+    .acl-form-grid {
+        display: grid;
+        gap: 20px;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
 
     .acl-form-group {
         position: relative;
@@ -281,7 +281,95 @@
         to { transform: rotate(360deg); }
     }
 
-    /* Result messages */
+    /* Modal/Popup */
+    .acl-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .acl-modal {
+        background: white;
+        border-radius: 12px;
+        padding: 40px;
+        max-width: 500px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: modalSlideIn 0.3s ease;
+    }
+
+    @keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-50px) scale(0.9);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .acl-modal-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+    }
+
+    .acl-modal-icon.success {
+        background: var(--acl-success);
+        color: white;
+    }
+
+    .acl-modal-icon.error {
+        background: var(--acl-danger);
+        color: white;
+    }
+
+    .acl-modal-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: var(--acl-text);
+    }
+
+    .acl-modal-message {
+        color: var(--acl-text-muted);
+        margin-bottom: 30px;
+        line-height: 1.5;
+        font-size: 1rem;
+    }
+
+    .acl-modal-btn {
+        background: var(--acl-primary);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--acl-transition);
+    }
+
+    .acl-modal-btn:hover {
+        background: var(--acl-primary-dark);
+    }
+
+    /* Result messages inline - ora nascosti */
     .acl-alert {
         padding: 20px;
         border-radius: var(--acl-radius);
@@ -346,71 +434,76 @@
     }
 
     /* Mobile optimizations */
-@media (max-width: 600px) {
-    .acl-form-wrapper {
-        padding: 10px;
+    @media (max-width: 600px) {
+        .acl-form-wrapper {
+            padding: 10px;
+        }
+
+        .acl-form-body {
+            padding: 20px 15px;
+        }
+
+        .acl-form-grid {
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .acl-submit-btn {
+            width: 100%;
+            padding: 15px 30px;
+        }
+
+        .acl-dog-section {
+            padding: 20px 15px;
+        }
+
+        .acl-modal {
+            padding: 30px 20px;
+            margin: 20px;
+        }
+
+        /* Migliora touch targets per mobile */
+        .acl-form-control {
+            min-height: 48px;
+        }
+
+        .acl-checkbox {
+            width: 24px;
+            height: 24px;
+        }
     }
 
-    .acl-form-body {
-        padding: 20px 15px;
+    /* Ottimizzazione per schermi medi */
+    @media (min-width: 601px) and (max-width: 900px) {
+        .acl-form-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        /* Forza alcuni campi a occupare tutta la larghezza */
+        .acl-form-group.full-width,
+        .acl-form-group:has(#email),
+        .acl-form-group:has(#residenza) {
+            grid-column: 1 / -1;
+        }
     }
 
-    .acl-form-grid {
-        grid-template-columns: 1fr;
-        gap: 15px;
+    /* Desktop optimization */
+    @media (min-width: 901px) {
+        .acl-form-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        /* Campi che devono occupare tutta la larghezza */
+        .acl-form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        /* Ottimizza la disposizione per provincia e CAP */
+        .acl-form-group:has(#provincia),
+        .acl-form-group:has(#cap) {
+            max-width: 150px;
+        }
     }
-
-    .acl-submit-btn {
-        width: 100%;
-        padding: 15px 30px;
-    }
-
-    .acl-dog-section {
-        padding: 20px 15px;
-    }
-
-    /* Migliora touch targets per mobile */
-    .acl-form-control {
-        min-height: 48px;
-    }
-
-    .acl-checkbox {
-        width: 24px;
-        height: 24px;
-    }
-}
-
-/* Ottimizzazione per schermi medi */
-@media (min-width: 601px) and (max-width: 900px) {
-    .acl-form-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    /* Forza alcuni campi a occupare tutta la larghezza */
-    .acl-form-group.full-width,
-    .acl-form-group:has(#email),
-    .acl-form-group:has(#residenza) {
-        grid-column: 1 / -1;
-    }
-}
-
-/* Desktop optimization */
-@media (min-width: 901px) {
-    .acl-form-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    /* Campi che devono occupare tutta la larghezza */
-    .acl-form-group.full-width {
-        grid-column: 1 / -1;
-    }
-    
-    /* Ottimizza la disposizione per provincia e CAP */
-    .acl-form-group:has(#provincia),
-    .acl-form-group:has(#cap) {
-        max-width: 150px;
-    }
-}
 
     /* Tablet adjustments */
     @media (min-width: 769px) and (max-width: 1024px) {
@@ -426,7 +519,8 @@
         }
 
         .acl-submit-wrapper,
-        .acl-alert {
+        .acl-alert,
+        .acl-modal-overlay {
             display: none;
         }
     }
@@ -468,11 +562,24 @@
     }
 </style>
 
+<!-- Modal per feedback -->
+<div id="aclModal" class="acl-modal-overlay">
+    <div class="acl-modal">
+        <div id="aclModalIcon" class="acl-modal-icon">
+            <span id="aclModalIconText">✓</span>
+        </div>
+        <div id="aclModalTitle" class="acl-modal-title">Iscrizione Completata!</div>
+        <div id="aclModalMessage" class="acl-modal-message">
+            Grazie per la tua iscrizione. Riceverai una email di conferma con il modulo compilato in allegato.
+        </div>
+        <button id="aclModalBtn" class="acl-modal-btn">Perfetto!</button>
+    </div>
+</div>
+
 <div class="acl-form-wrapper">
     <div class="acl-form-container">
         <div class="acl-form-header">
             <h2>Modulo di Iscrizione</h2>
-            
         </div>
         
         <div class="acl-form-body">
@@ -516,19 +623,19 @@
                         </div>
                         
                         <div class="acl-form-group">
-        <label for="comune" class="acl-required">Comune</label>
-        <input type="text" id="comune" name="comune" class="acl-form-control" required autocomplete="address-level2">
-    </div>
-    
-    <div class="acl-form-group">
-        <label for="provincia" class="acl-required">Provincia</label>
-        <input type="text" id="provincia" name="provincia" class="acl-form-control" maxlength="2" style="text-transform: uppercase;" required autocomplete="address-level1">
-    </div>
-    
-    <div class="acl-form-group">
-        <label for="cap" class="acl-required">CAP</label>
-        <input type="text" id="cap" name="cap" class="acl-form-control" pattern="[0-9]{5}" maxlength="5" required autocomplete="postal-code">
-    </div>
+                            <label for="comune" class="acl-required">Comune</label>
+                            <input type="text" id="comune" name="comune" class="acl-form-control" required autocomplete="address-level2">
+                        </div>
+                        
+                        <div class="acl-form-group">
+                            <label for="provincia" class="acl-required">Provincia</label>
+                            <input type="text" id="provincia" name="provincia" class="acl-form-control" maxlength="2" style="text-transform: uppercase;" required autocomplete="address-level1">
+                        </div>
+                        
+                        <div class="acl-form-group">
+                            <label for="cap" class="acl-required">CAP</label>
+                            <input type="text" id="cap" name="cap" class="acl-form-control" pattern="[0-9]{5}" maxlength="5" required autocomplete="postal-code">
+                        </div>
                         
                         <div class="acl-form-group">
                             <label for="codiceFiscale" class="acl-required">Codice Fiscale</label>
@@ -679,17 +786,17 @@
                         </p>
                     </div>
                 </div>
+                
                 <!-- CONSENSO SOCIAL -->
-					<div class="acl-privacy-box" style="margin-top: 15px;">
-						<label class="acl-checkbox-label">
-							<input type="checkbox" id="consensoSocial" name="consensoSocial" class="acl-checkbox">
-							<span>Autorizzo la pubblicazione di foto e video sui canali social del club</span>
-						</label>
-						<p class="acl-privacy-text">
-							Le immagini saranno utilizzate esclusivamente per documentare le attività dell'associazione sui nostri canali social (Facebook, Instagram, sito web).
-						</p>
-					</div>
-				
+                <div class="acl-privacy-box" style="margin-top: 15px;">
+                    <label class="acl-checkbox-label">
+                        <input type="checkbox" id="consensoSocial" name="consensoSocial" class="acl-checkbox">
+                        <span>Autorizzo la pubblicazione di foto e video sui canali social del club</span>
+                    </label>
+                    <p class="acl-privacy-text">
+                        Le immagini saranno utilizzate esclusivamente per documentare le attività dell'associazione sui nostri canali social (Facebook, Instagram, sito web).
+                    </p>
+                </div>
                 
                 <!-- SUBMIT -->
                 <div class="acl-submit-wrapper">
@@ -700,8 +807,8 @@
                 </div>
             </form>
             
-            <!-- RESULT -->
-            <div id="aclResult" class="acl-alert"></div>
+            <!-- RESULT - ora nascosto, sostituito dal modal -->
+            <div id="aclResult" class="acl-alert" style="display: none;"></div>
         </div>
     </div>
 </div>
@@ -711,8 +818,8 @@
     'use strict';
     
     // Configurazione
-    //const API_URL = 'https://form-pdf-webapp.onrender.com/api/form/submit';
-    const API_URL = 'http://localhost:3000/api/form/submit';
+    const API_URL = 'https://form-pdf-webapp.onrender.com/api/form/submit';
+    //const API_URL = 'http://localhost:3000/api/form/submit';
     
     // Elementi DOM
     const form = document.getElementById('aclIscrizioneForm');
@@ -722,6 +829,14 @@
     const resultDiv = document.getElementById('aclResult');
     const secondDogCheckbox = document.getElementById('aggiungiSecondoCane');
     const secondDogSection = document.getElementById('aclSecondDogSection');
+    
+    // Modal elementi
+    const modal = document.getElementById('aclModal');
+    const modalIcon = document.getElementById('aclModalIcon');
+    const modalIconText = document.getElementById('aclModalIconText');
+    const modalTitle = document.getElementById('aclModalTitle');
+    const modalMessage = document.getElementById('aclModalMessage');
+    const modalBtn = document.getElementById('aclModalBtn');
     
     // Gestione secondo cane
     secondDogCheckbox.addEventListener('change', function() {
@@ -742,9 +857,9 @@
     });
     
     // Validazione codice fiscale - solo controllo lunghezza
-function validateCodiceFiscale(cf) {
-    return cf.length >= 11; // Accetta qualsiasi cosa con almeno 11 caratteri
-}
+    function validateCodiceFiscale(cf) {
+        return cf.length >= 11; // Accetta qualsiasi cosa con almeno 11 caratteri
+    }
     
     // Auto-uppercase per campi specifici
     document.getElementById('codiceFiscale').addEventListener('input', function(e) {
@@ -755,16 +870,23 @@ function validateCodiceFiscale(cf) {
         e.target.value = e.target.value.toUpperCase();
     });
     
-    // Formattazione telefono
-   // document.getElementById('telefono').addEventListener('input', function(e) {
-   //     let value = e.target.value.replace(/\D/g, '');
-   //     if (value.length > 3 && value.length <= 6) {
-   //         value = value.slice(0, 3) + ' ' + value.slice(3);
-   //     } else if (value.length > 6) {
-   //         value = value.slice(0, 3) + ' ' + value.slice(3, 6) + ' ' + value.slice(6, 10);
-   //     }
-   //     e.target.value = value;
-   // });
+    // Gestione modal
+    function showModal(type, title, message) {
+        modalIconText.textContent = type === 'success' ? '✓' : '✗';
+        modalIcon.className = `acl-modal-icon ${type}`;
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+        modal.style.display = 'flex';
+    }
+    
+    function hideModal() {
+        modal.style.display = 'none';
+    }
+    
+    modalBtn.addEventListener('click', hideModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) hideModal();
+    });
     
     // Gestione invio form
     form.addEventListener('submit', async function(e) {
@@ -773,15 +895,19 @@ function validateCodiceFiscale(cf) {
         // Validazione codice fiscale
         const cfInput = document.getElementById('codiceFiscale');
         if (!validateCodiceFiscale(cfInput.value)) {
-            showResult('error', 'Codice Fiscale non valido', 'Inserisci un codice fiscale italiano valido.');
+            showModal(
+                'error',
+                'Codice Fiscale non valido',
+                'Inserisci un codice fiscale italiano valido (almeno 11 caratteri).'
+            );
             cfInput.focus();
-           return;
+            return;
         }
         
         // UI feedback
         submitBtn.disabled = true;
         submitBtn.classList.add('acl-loading');
-        btnText.textContent = 'Invio in corso';
+        btnText.textContent = 'Invio in corso...';
         resultDiv.style.display = 'none';
         
         // Raccolta dati
@@ -812,8 +938,10 @@ function validateCodiceFiscale(cf) {
             const result = await response.json();
             
             if (response.ok && result.success) {
-                showResult('success', 
-                    '✓ Iscrizione completata con successo!', 
+                // Mostra modal di successo
+                showModal(
+                    'success',
+                    'Iscrizione Completata!',
                     'Grazie per la tua iscrizione. Riceverai una email di conferma con il modulo compilato in allegato.'
                 );
                 
@@ -821,23 +949,26 @@ function validateCodiceFiscale(cf) {
                 form.reset();
                 secondDogSection.style.display = 'none';
                 
-                // Scroll to result
-                resultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
             } else {
                 let errorMessage = 'Si è verificato un errore durante l\'invio del modulo.';
                 
                 if (result.errors && Array.isArray(result.errors)) {
-                    const errorList = result.errors.map(err => err.msg || err.message).join('<br>');
-                    errorMessage += '<br><br>' + errorList;
+                    const errorList = result.errors.map(err => err.msg || err.message).join(' • ');
+                    errorMessage += ' Errori: ' + errorList;
                 }
                 
-                showResult('error', '✗ Errore nell\'invio', errorMessage);
+                showModal(
+                    'error',
+                    'Errore nell\'invio',
+                    errorMessage
+                );
             }
             
         } catch (error) {
-            showResult('error', 
-                '✗ Errore di connessione', 
+            console.error('Errore connessione:', error);
+            showModal(
+                'error',
+                'Errore di connessione',
                 'Non è stato possibile inviare il modulo. Verifica la tua connessione internet e riprova.'
             );
             
@@ -849,7 +980,7 @@ function validateCodiceFiscale(cf) {
         }
     });
     
-    // Funzione per mostrare risultati
+    // Funzione per mostrare risultati (mantenuta per compatibilità)
     function showResult(type, title, message) {
         resultDiv.className = `acl-alert acl-alert-${type}`;
         resultDiv.innerHTML = `
