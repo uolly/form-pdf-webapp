@@ -54,31 +54,27 @@ class RicevuteService {
     }
   }
 
-  // Ottieni lista contatti per autocompletamento
-  async getContatti() {
-    try {
-      //const response = await this.sheets.spreadsheets.values.get({
-       // spreadsheetId: this.spreadsheetId,
-       // range: 'Contatti!A2:C' // Colonne: Email, Nome, Cognome
-      //});
-      const response = await this.sheets.spreadsheets.values.get({
-        spreadsheetId: this.spreadsheetContattiID,
-        range: 'Soci!B2:D' // Colonne: Email, Nome, Cognome
-      });
-      
-      const rows = response.data.values || [];
-      return rows.map(row => ({
-        email: row[2] || '',
-        nome: row[0] || '',
-        cognome: row[1] || ''
-      })).filter(c => c.email); // Solo contatti con email
-      
-    } catch (error) {
-      console.log('Errore lettura contatti:', error.message);
-      // Se non esiste il foglio contatti, ritorna array vuoto
-      return [];
-    }
+// Ottieni lista contatti per autocompletamento
+async getContatti() {
+  try {
+    const response = await this.sheets.spreadsheets.values.get({
+      spreadsheetId: this.spreadsheetContattiID,
+      range: 'Soci!B2:D' // Colonne: Nome, Cognome, Email
+    });
+    
+    const rows = response.data.values || [];
+    return rows.map(row => ({
+      nome: row[0] || '',        // Colonna B = Nome
+      cognome: row[1] || '',     // Colonna C = Cognome  
+      email: row[2] || ''        // Colonna D = Email
+    })).filter(c => c.email && c.nome); // Solo contatti con email e nome
+    
+  } catch (error) {
+    console.log('Errore lettura contatti:', error.message);
+    // Se non esiste il foglio contatti, ritorna array vuoto
+    return [];
   }
+}
 
   // Salva ricevuta nel registro
   async salvaRicevuta(ricevutaData) {
