@@ -76,8 +76,7 @@ async getContatti() {
   }
 }
 
-  // Salva ricevuta nel registro
-  async salvaRicevuta(ricevutaData) {
+async salvaRicevuta(ricevutaData) {
     const range = 'Ricevute!A:K'; // Foglio principale ricevute
     
     const values = [[
@@ -89,19 +88,25 @@ async getContatti() {
       ricevutaData.ricevutaPer,
       ricevutaData.modalitaPagamento,
       ricevutaData.educatoreTecnico,
-      parseFloat(ricevutaData.denaroRicevuto),//.toFixed(2),
+      parseInt(ricevutaData.denaroRicevuto), // Numero intero
       'Emessa', // Stato
       `Ricevuta n. ${ricevutaData.numeroRicevuta}` // Note
     ]];
     
     try {
-      const response = await this.sheets.spreadsheets.values.append({
+      // Salva nel foglio Ricevute
+      const response = await this.sheets.spreadsheetsg.values.append({
         spreadsheetId: this.spreadsheetId,
         range,
         valueInputOption: 'USER_ENTERED',
         insertDataOption: 'INSERT_ROWS',
         resource: { values }
       });
+      
+      // Se è un pagamento in contanti, salva anche nel foglio Cassa
+      if (ricevutaData.modalitaPagamento.toLowerCase() === 'contanti') {
+        await this.salvaNellaCassa(ricevutaData);
+      }
       
       return response.data;
     } catch (error) {
@@ -111,6 +116,52 @@ async getContatti() {
         // Riprova
         return this.salvaRicevuta(ricevutaData);
       }
+      throw error;
+    }
+  }
+
+  async salvaNellaCassa(ricevutaData) {
+    // Trova la prima riga libera nella colonna C del foglio Cassa
+    const colonnaC = await this.sheets.spreadsheetsg.values.get({
+      spreadsheetId: this.spreadsheetId,
+      range: 'Cassa!C:C'
+    });
+    
+    let primaRigaLibera = 1;
+    if (colonnaC.data.values) {
+      // Trova la prima cella vuota nella colonna C
+      for (let i = 0; i < colonnaC.data.values.length; i++) {
+        if (!colonnaC.data.values[i][0] || colonnaC.data.values[i][0] === '') {
+          primaRigaLibera = i + 1;
+          break;
+        }
+      }
+      // Se tutte le celle sono piene, aggiungi alla fine
+      if (primaRigaLibera === 1) {
+        primaRigaLibera = colonnaC.data.values.length + 1;
+      }
+    }
+
+    // Prepara i dati per il foglio Cassa
+    const rangeCassa = `Cassa!C${primaRigaLibera}:H${primaRigaLibera}`;
+    const valuesCassa = [[
+      ricevutaData.dataRicevuta,                    // Colonna C: Data
+      ricevutaData.ricevutaPer,                     // Colonna D: Causale
+      '',                                           // Colonna E: vuota
+      '',                                           // Colonna F: vuota  
+      ricevutaData.ricevutoDa,                      // Colonna G: Pagante
+      parseInt(ricevutaData.denaroRicevuto)         // Colonna H: Importo intero
+    ]];
+
+    try {
+      await this.sheets.spreadsheetsg.values.update({
+        spreadsheetId: this.spreadsheetId,
+        range: rangeCassa,
+        valueInputOption: 'USER_ENTERED',
+        resource: { values: valuesCassa }
+      });
+    } catch (error) {
+      console.error('Errore nel salvare in Cassa:', error);
       throw error;
     }
   }
