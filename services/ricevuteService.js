@@ -89,7 +89,7 @@ async getContatti() {
       ricevutaData.ricevutaPer,
       ricevutaData.modalitaPagamento,
       ricevutaData.educatoreTecnico,
-      parseFloat(ricevutaData.denaroRicevuto).toFixed(2),
+      parseFloat(ricevutaData.denaroRicevuto),//.toFixed(2),
       'Emessa', // Stato
       `Ricevuta n. ${ricevutaData.numeroRicevuta}` // Note
     ]];
