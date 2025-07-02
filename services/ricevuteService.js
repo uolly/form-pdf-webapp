@@ -95,7 +95,7 @@ async salvaRicevuta(ricevutaData) {
     
     try {
       // Salva nel foglio Ricevute
-      const response = await this.sheets.spreadsheetsg.values.append({
+      const response = await this.sheets.spreadsheets.values.append({
         spreadsheetId: this.spreadsheetId,
         range,
         valueInputOption: 'USER_ENTERED',
@@ -122,7 +122,7 @@ async salvaRicevuta(ricevutaData) {
 
   async salvaNellaCassa(ricevutaData) {
     // Trova la prima riga libera nella colonna C del foglio Cassa
-    const colonnaC = await this.sheets.spreadsheetsg.values.get({
+    const colonnaC = await this.sheets.spreadsheets.values.get({
       spreadsheetId: this.spreadsheetId,
       range: 'Cassa!C:C'
     });
@@ -154,7 +154,7 @@ async salvaRicevuta(ricevutaData) {
     ]];
 
     try {
-      await this.sheets.spreadsheetsg.values.update({
+      await this.sheets.spreadsheets.values.update({
         spreadsheetId: this.spreadsheetId,
         range: rangeCassa,
         valueInputOption: 'USER_ENTERED',
