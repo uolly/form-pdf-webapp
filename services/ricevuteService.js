@@ -130,7 +130,7 @@ async salvaRicevuta(ricevutaData) {
     let primaRigaLibera = 1;
     if (colonnaC.data.values) {
       // Trova la prima cella vuota nella colonna C
-      for (let i = 0; i < colonnaC.data.values.length; i++) {
+      for (let i = 4; i < colonnaC.data.values.length; i++) {
         if (!colonnaC.data.values[i][0] || colonnaC.data.values[i][0] === '') {
           primaRigaLibera = i + 1;
           break;
