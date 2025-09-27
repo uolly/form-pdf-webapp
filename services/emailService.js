@@ -1,51 +1,111 @@
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
 class EmailService {
   constructor() {
-    // Configurazione per diversi provider
-    const smtpConfig = {
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT),
-      secure: process.env.SMTP_PORT === '465', // true per 465, false per altre porte
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
-    };
+    console.log('🔍 EMAILSERVICE CONSTRUCTOR - Inizio debug versione SendGrid');
+    console.log('🔍 SENDGRID_API_KEY presente:', !!process.env.SENDGRID_API_KEY);
+    console.log('🔍 SENDGRID_API_KEY lunghezza:', process.env.SENDGRID_API_KEY?.length || 0);
+    console.log('🔍 Tutte le variabili ENV email:', Object.keys(process.env).filter(key => 
+      key.includes('SENDGRID') || key.includes('SMTP') || key.includes('EMAIL')
+    ));
 
-    // Configurazione specifica per Aruba
-    if (process.env.SMTP_HOST.includes('aruba')) {
-      smtpConfig.tls = {
-        rejectUnauthorized: false
-      };
+    // Configura SendGrid
+    if (process.env.SENDGRID_API_KEY) {
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+      this.sendGridEnabled = true;
+      console.log('✅ SendGrid configurato e abilitato');
+    } else {
+      this.sendGridEnabled = false;
+      console.log('❌ SENDGRID_API_KEY mancante - SendGrid disabilitato');
     }
 
-    this.transporter = nodemailer.createTransport(smtpConfig);
-    
-    // Verifica la connessione all'avvio
-    this.transporter.verify((error, success) => {
-      if (error) {
-        console.error('Errore configurazione email:', error);
-      } else {
-        console.log('Server email pronto per inviare messaggi');
-      }
-    });
+    console.log('🔍 EMAILSERVICE CONSTRUCTOR - sendGridEnabled:', this.sendGridEnabled);
   }
 
+  // Metodo principale per invio email con SendGrid
+  async sendEmail(mailOptions) {
+    console.log('📧 SENDEMAIL chiamato - sendGridEnabled:', this.sendGridEnabled);
+    
+    if (!this.sendGridEnabled) {
+      console.log('❌ SendGrid non abilitato, errore!');
+      throw new Error('SendGrid non configurato - controllare SENDGRID_API_KEY');
+    }
+
+    console.log('📧 Usando SendGrid per invio email...');
+
+    try {
+      const message = {
+        to: this.ensureArray(mailOptions.to),
+        from: {
+          email: this.extractEmail(mailOptions.from),
+          name: this.extractName(mailOptions.from) || 'Agility Club Labora'
+        },
+        subject: mailOptions.subject,
+        html: mailOptions.html,
+        
+        // Ottimizzazioni anti-spam
+        tracking_settings: {
+          click_tracking: { enable: false },
+          open_tracking: { enable: false },
+          subscription_tracking: { enable: false }
+        },
+
+        // Headers professionali
+        custom_args: {
+          source: 'agility_club_system',
+          version: '2.0'
+        }
+      };
+
+      // Aggiungi CC se presente
+      if (mailOptions.cc) {
+        message.cc = this.ensureArray(mailOptions.cc);
+      }
+
+      // Aggiungi allegati se presenti
+      if (mailOptions.attachments && mailOptions.attachments.length > 0) {
+        message.attachments = mailOptions.attachments.map(att => ({
+          content: att.content.toString('base64'),
+          filename: att.filename,
+          type: att.contentType || 'application/octet-stream',
+          disposition: 'attachment'
+        }));
+      }
+
+      console.log('📧 Invio con SendGrid...');
+      const response = await sgMail.send(message);
+      
+      console.log('✅ Email inviata con SendGrid - Status:', response[0].statusCode);
+      return {
+        method: 'sendgrid',
+        messageId: response[0].headers['x-message-id'] || 'sg-' + Date.now(),
+        accepted: message.to
+      };
+
+    } catch (error) {
+      console.error('❌ Errore SendGrid:', error.message);
+      if (error.response) {
+        console.error('❌ SendGrid response:', JSON.stringify(error.response.body, null, 2));
+      }
+      throw error;
+    }
+  }
+
+  // Metodo per iscrizioni - usa SendGrid
   async sendFormEmail(formData, pdfBuffer) {
     try {
-      // Nome file PDF con timestamp
-      const pdfFileName = `iscrizione_${formData.cognome}_${formData.nome}_${Date.now()}.pdf`;
+      console.log('📧 SENDFORMEMAIL chiamato per:', formData.nome, formData.cognome);
       
-      // 1. EMAIL ALL'AMMINISTRATORE (con tutti i dettagli)
-      const adminHtmlContent = this.generateAdminEmailContent(formData);
+      const timestamp = Date.now();
+      const pdfFileName = `modulo_iscrizione_${formData.cognome}_${formData.nome}_${timestamp}.pdf`;
       
+      // 1. EMAIL ALL'AMMINISTRATORE
       const adminMailOptions = {
-        from: `"Iscrizioni Agility Club" <${process.env.EMAIL_FROM}>`,
+        from: `"Agility Club Labora" <${process.env.EMAIL_FROM}>`,
         to: process.env.EMAIL_TO,
-		cc: 'walter.cleva@gmail.com', // <-- Aggiungi questa riga
-        subject: `Nuova iscrizione: ${formData.nome} ${formData.cognome}`,
-        html: adminHtmlContent,
+        cc: 'walter.cleva@gmail.com',
+        subject: `Nuova iscrizione ricevuta - ${formData.nome} ${formData.cognome}`,
+        html: this.generateAdminEmailContent(formData),
         attachments: [
           {
             filename: pdfFileName,
@@ -55,14 +115,12 @@ class EmailService {
         ]
       };
 
-      // 2. EMAIL ALL'UTENTE (conferma semplificata)
-      const userHtmlContent = this.generateUserEmailContent(formData);
-      
+      // 2. EMAIL ALL'UTENTE
       const userMailOptions = {
         from: `"Agility Club Labora" <${process.env.EMAIL_FROM}>`,
         to: formData.email,
         subject: 'Conferma iscrizione - Agility Club Labora',
-        html: userHtmlContent,
+        html: this.generateUserEmailContent(formData),
         attachments: [
           {
             filename: pdfFileName,
@@ -72,427 +130,267 @@ class EmailService {
         ]
       };
 
-      // Invia entrambe le email
-      console.log('Invio email all\'amministratore...');
-      const adminResult = await this.transporter.sendMail(adminMailOptions);
-      console.log('Email amministratore inviata:', adminResult.messageId);
+      // Invia entrambe le email con SendGrid
+      console.log('📧 Invio email amministratore con SendGrid...');
+      const adminResult = await this.sendEmail(adminMailOptions);
       
-      console.log('Invio email di conferma all\'utente...');
-      const userResult = await this.transporter.sendMail(userMailOptions);
-      console.log('Email utente inviata:', userResult.messageId);
+      console.log('📧 Invio email conferma utente con SendGrid...');
+      const userResult = await this.sendEmail(userMailOptions);
       
       return {
-        accepted: [...adminResult.accepted, ...userResult.accepted],
+        success: true,
+        admin: adminResult,
+        user: userResult,
+        accepted: [
+          ...(adminResult.accepted || []),
+          ...(userResult.accepted || [])
+        ],
         adminMessageId: adminResult.messageId,
         userMessageId: userResult.messageId
       };
       
     } catch (error) {
-      console.error('Errore invio email:', error);
+      console.error('💥 Errore invio email iscrizione:', error);
       throw error;
     }
   }
-  
-  // Aggiungi dopo il metodo sendFormEmail esistente
 
-async sendRicevutaEmails(ricevutaData, pdfBuffer) {
-  try {
-    const pdfFileName = `ricevuta_${ricevutaData.numeroRicevuta}_${Date.now()}.pdf`;
-    
-    // 1. EMAIL AL PAGANTE
-    const userMailOptions = {
-      from: `"Agility Club Labora" <${process.env.EMAIL_FROM}>`,
-      to: ricevutaData.emailPagante,
-      subject: `Ricevuta n. ${ricevutaData.numeroRicevuta} - Agility Club Labora`,
-      html: this.generateRicevutaUserEmail(ricevutaData),
-      attachments: [
-        {
-          filename: pdfFileName,
-          content: pdfBuffer,
-          contentType: 'application/pdf'
-        }
-      ]
-    };
+  // Metodo per ricevute - usa SendGrid
+  async sendRicevutaEmails(ricevutaData, pdfBuffer) {
+    try {
+      console.log('📧 SENDRICEVUTAEMAILS chiamato per ricevuta:', ricevutaData.numeroRicevuta);
+      
+      const timestamp = Date.now();
+      const pdfFileName = `ricevuta_${ricevutaData.numeroRicevuta}_${timestamp}.pdf`;
+      
+      // 1. EMAIL AL PAGANTE
+      const userMailOptions = {
+        from: `"Agility Club Labora" <${process.env.EMAIL_FROM}>`,
+        to: ricevutaData.emailPagante,
+        subject: `Ricevuta pagamento n. ${ricevutaData.numeroRicevuta} - Agility Club Labora`,
+        html: this.generateRicevutaUserEmail(ricevutaData),
+        attachments: [
+          {
+            filename: pdfFileName,
+            content: pdfBuffer,
+            contentType: 'application/pdf'
+          }
+        ]
+      };
 
-    // 2. EMAIL AGLI AMMINISTRATORI
-    const adminEmails = process.env.EMAIL_RICEVUTE_ADMIN || process.env.EMAIL_TO;
-    const adminMailOptions = {
-      from: `"Sistema Ricevute" <${process.env.EMAIL_FROM}>`,
-      to: adminEmails,
-      subject: `[Admin] Nuova ricevuta n. ${ricevutaData.numeroRicevuta}`,
-      html: this.generateRicevutaAdminEmail(ricevutaData),
-      attachments: [
-        {
-          filename: pdfFileName,
-          content: pdfBuffer,
-          contentType: 'application/pdf'
-        }
-      ]
-    };
+      // 2. EMAIL AGLI AMMINISTRATORI
+      const adminEmails = process.env.EMAIL_RICEVUTE_ADMIN || process.env.EMAIL_TO;
+      const adminMailOptions = {
+        from: `"Sistema Amministrativo" <${process.env.EMAIL_FROM}>`,
+        to: adminEmails,
+        subject: `Amministrazione - Ricevuta n. ${ricevutaData.numeroRicevuta} emessa`,
+        html: this.generateRicevutaAdminEmail(ricevutaData),
+        attachments: [
+          {
+            filename: pdfFileName,
+            content: pdfBuffer,
+            contentType: 'application/pdf'
+          }
+        ]
+      };
 
-    // Invia entrambe le email
-    const userResult = await this.transporter.sendMail(userMailOptions);
-    const adminResult = await this.transporter.sendMail(adminMailOptions);
-    
-    return {
-      success: true,
-      userMessageId: userResult.messageId,
-      adminMessageId: adminResult.messageId
-    };
-    
-  } catch (error) {
-    console.error('Errore invio email ricevuta:', error);
-    throw error;
-  }
-}
-
-// Email per il pagante
-generateRicevutaUserEmail(ricevutaData) {
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
-        .content { background-color: #ffffff; padding: 30px; border: 1px solid #e0e0e0; }
-        .info-box { background-color: #ecf0f1; padding: 20px; border-radius: 5px; margin: 20px 0; }
-        .amount { font-size: 24px; color: #27ae60; font-weight: bold; }
-        .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #7f8c8d; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>Ricevuta di Pagamento</h1>
-          <p>Agility Club Labora</p>
-        </div>
-        
-        <div class="content">
-          <p>Gentile <strong>${ricevutaData.ricevutoDa}</strong>,</p>
-          
-          <p>Confermiamo di aver ricevuto il tuo pagamento.</p>
-          
-          <div class="info-box">
-            <h3>Dettagli del pagamento:</h3>
-            <p><strong>Ricevuta n.:</strong> ${ricevutaData.numeroRicevuta}</p>
-            <p><strong>Data:</strong> ${this.formatDate(ricevutaData.dataRicevuta)}</p>
-            <p><strong>Causale:</strong> ${ricevutaData.ricevutaPer}</p>
-            <p class="amount">Importo: € ${parseFloat(ricevutaData.denaroRicevuto).toFixed(2)}</p>
-          </div>
-          
-          <p>In allegato trovi la ricevuta in formato PDF da conservare.</p>
-          
-          <p>Per qualsiasi informazione, non esitare a contattarci.</p>
-          
-          <p>Cordiali saluti,<br>
-          <strong>Agility Club Labora</strong></p>
-        </div>
-        
-        <div class="footer">
-          <p>Questa email è stata generata automaticamente dal sistema di gestione ricevute.</p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-}
-
-// Email per gli amministratori
-generateRicevutaAdminEmail(ricevutaData) {
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 700px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #34495e; color: white; padding: 20px; text-align: center; }
-        .content { background-color: #ffffff; padding: 20px; border: 1px solid #ddd; }
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #ddd; }
-        th { background-color: #ecf0f1; font-weight: bold; }
-        .highlight { background-color: #f39c12; color: white; padding: 5px 10px; border-radius: 3px; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h2>Nuova Ricevuta Emessa - Sistema Amministrativo</h2>
-        </div>
-        
-        <div class="content">
-          <p><span class="highlight">Ricevuta n. ${ricevutaData.numeroRicevuta}</span></p>
-          
-          <table>
-            <tr>
-              <th>Campo</th>
-              <th>Valore</th>
-            </tr>
-            <tr>
-              <td>Numero Ricevuta</td>
-              <td><strong>${ricevutaData.numeroRicevuta}</strong></td>
-            </tr>
-            <tr>
-              <td>Data Ricevuta</td>
-              <td>${this.formatDate(ricevutaData.dataRicevuta)}</td>
-            </tr>
-            <tr>
-              <td>Ricevuto da</td>
-              <td>${ricevutaData.ricevutoDa}</td>
-            </tr>
-            <tr>
-              <td>Email</td>
-              <td>${ricevutaData.emailPagante}</td>
-            </tr>
-            <tr>
-              <td>Causale</td>
-              <td>${ricevutaData.ricevutaPer}</td>
-            </tr>
-            <tr>
-              <td>Modalità di Pagamento</td>
-              <td>${ricevutaData.modalitaPagamento}</td>
-            </tr>
-            <tr>
-              <td>Educatore/Tecnico</td>
-              <td>${ricevutaData.educatoreTecnico}</td>
-            </tr>
-            <tr>
-              <td>Importo</td>
-              <td style="font-size: 18px; color: #27ae60;"><strong>€ ${parseFloat(ricevutaData.denaroRicevuto).toFixed(2)}</strong></td>
-            </tr>
-          </table>
-          
-          <p><strong>Timestamp emissione:</strong> ${new Date().toLocaleString('it-IT')}</p>
-          
-          <hr>
-          
-          <p style="font-size: 12px; color: #7f8c8d;">
-            Questa email è stata inviata automaticamente dal sistema di gestione ricevute.
-            La ricevuta è stata salvata nel registro Google Sheets.
-          </p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-}
-
-  // Email dettagliata per l'amministratore
-  generateAdminEmailContent(formData) {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background-color: #0073aa; color: white; padding: 20px; text-align: center; }
-          .content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; }
-          .section { margin-bottom: 20px; }
-          .section h3 { color: #0073aa; border-bottom: 2px solid #0073aa; padding-bottom: 5px; }
-          .field { margin: 10px 0; }
-          .field strong { display: inline-block; width: 150px; }
-          .dog-section { background-color: #e9f3f9; padding: 15px; margin: 10px 0; border-radius: 5px; }
-          .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h2>Nuova Iscrizione Ricevuta</h2>
-          </div>
-          
-          <div class="content">
-            <div class="section">
-              <h3>Dati Personali</h3>
-              <div class="field"><strong>Nome:</strong> ${formData.nome}</div>
-              <div class="field"><strong>Cognome:</strong> ${formData.cognome}</div>
-              <div class="field"><strong>Email:</strong> ${formData.email}</div>
-              <div class="field"><strong>Telefono:</strong> ${formData.telefono}</div>
-              <div class="field"><strong>Nato a:</strong> ${formData.natoA}</div>
-              <div class="field"><strong>Nato il:</strong> ${this.formatDate(formData.natoIl)}</div>
-              <div class="field"><strong>Residenza:</strong> ${formData.residenza}</div>
-              <div class="field"><strong>Comune:</strong> ${formData.comune} (${formData.provincia})</div>
-              <div class="field"><strong>CAP:</strong> ${formData.cap}</div>
-              <div class="field"><strong>Codice Fiscale:</strong> ${formData.codiceFiscale}</div>
-            </div>
-            
-            ${formData.nomeCane1 ? `
-            <div class="section">
-              <h3>Primo Cane</h3>
-              <div class="dog-section">
-                <div class="field"><strong>Nome:</strong> ${formData.nomeCane1}</div>
-                <div class="field"><strong>Sesso:</strong> ${formData.sessoCane1 === 'M' ? 'Maschio' : formData.sessoCane1 === 'F' ? 'Femmina' : ''}</div>
-                <div class="field"><strong>Razza:</strong> ${formData.razzaCane1 || 'Non specificata'}</div>
-                <div class="field"><strong>Altezza:</strong> ${formData.altezzaCane1 ? formData.altezzaCane1 + ' cm' : 'Non specificata'}</div>
-                <div class="field"><strong>Microchip:</strong> ${formData.microchipCane1 || 'Non specificato'}</div>
-                <div class="field"><strong>Data nascita:</strong> ${this.formatDate(formData.dataNascitaCane1) || 'Non specificata'}</div>
-                <div class="field"><strong>Proprietario:</strong> ${formData.proprietarioCane1 || 'Non specificato'}</div>
-                <div class="field"><strong>Conduttore:</strong> ${formData.conduttoreCane1 || 'Non specificato'}</div>
-              </div>
-            </div>
-            ` : ''}
-            
-            ${formData.aggiungiSecondoCane && formData.nomeCane2 ? `
-            <div class="section">
-              <h3>Secondo Cane</h3>
-              <div class="dog-section">
-                <div class="field"><strong>Nome:</strong> ${formData.nomeCane2}</div>
-                <div class="field"><strong>Sesso:</strong> ${formData.sessoCane2 === 'M' ? 'Maschio' : formData.sessoCane2 === 'F' ? 'Femmina' : ''}</div>
-                <div class="field"><strong>Razza:</strong> ${formData.razzaCane2 || 'Non specificata'}</div>
-                <div class="field"><strong>Altezza:</strong> ${formData.altezzaCane2 ? formData.altezzaCane2 + ' cm' : 'Non specificata'}</div>
-                <div class="field"><strong>Microchip:</strong> ${formData.microchipCane2 || 'Non specificato'}</div>
-                <div class="field"><strong>Data nascita:</strong> ${this.formatDate(formData.dataNascitaCane2) || 'Non specificata'}</div>
-                <div class="field"><strong>Proprietario:</strong> ${formData.proprietarioCane2 || 'Non specificato'}</div>
-                <div class="field"><strong>Conduttore:</strong> ${formData.conduttoreCane2 || 'Non specificato'}</div>
-              </div>
-            </div>
-            ` : ''}
-            
-            <div class="section">
-              <p><strong>Consenso Privacy:</strong> ✓ Accettato</p>
-              <p><strong>Data iscrizione:</strong> ${new Date().toLocaleString('it-IT')}</p>
-            </div>
-          </div>
-          
-          <div class="footer">
-            <p>Questa email è stata generata automaticamente dal sistema di iscrizione.</p>
-            <p>Il modulo compilato è allegato a questa email in formato PDF.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
+      // Invia entrambe le email con SendGrid
+      console.log('📧 Invio ricevuta al pagante con SendGrid...');
+      const userResult = await this.sendEmail(userMailOptions);
+      
+      console.log('📧 Invio notifica amministratori con SendGrid...');
+      const adminResult = await this.sendEmail(adminMailOptions);
+      
+      return {
+        success: true,
+        user: userResult,
+        admin: adminResult,
+        userMessageId: userResult.messageId,
+        adminMessageId: adminResult.messageId
+      };
+      
+    } catch (error) {
+      console.error('💥 Errore invio email ricevuta:', error);
+      throw error;
+    }
   }
 
-  // Email semplificata per l'utente
+  // Metodo di test
+  async testSendGridOptimized() {
+    if (!this.sendGridEnabled) {
+      throw new Error('SendGrid non configurato');
+    }
+
+    const testEmail = {
+      from: process.env.EMAIL_FROM,
+      to: process.env.EMAIL_TO,
+      subject: 'Test configurazione sistema email - Agility Club Labora',
+      html: `
+        <!DOCTYPE html>
+        <html lang="it">
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; border: 1px solid #ddd; background: white; }
+            .header { background-color: #2c5aa0; color: white; padding: 25px; text-align: center; }
+            .content { padding: 30px; }
+            .success { background-color: #d4edda; padding: 20px; border: 1px solid #c3e6cb; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0; font-size: 24px;">Test Sistema Email SendGrid</h1>
+              <p style="margin: 10px 0 0 0;">Agility Club Labora - A.S.D.</p>
+            </div>
+            <div class="content">
+              <p>Gentile Amministratore,</p>
+              <p>questo messaggio conferma che il sistema SendGrid è attivo e funzionante.</p>
+              <div class="success">
+                <h3 style="margin-top: 0; color: #155724;">Sistema Operativo</h3>
+                <p style="margin-bottom: 0;">SendGrid è configurato correttamente e le email vengono inviate senza timeout.</p>
+              </div>
+              <p><strong>Data test:</strong> ${new Date().toLocaleDateString('it-IT')}</p>
+              <p><strong>Ora test:</strong> ${new Date().toLocaleTimeString('it-IT')}</p>
+              <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+              <p>Cordiali saluti,<br><strong>Sistema Gestione Email</strong></p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    return await this.sendEmail(testEmail);
+  }
+
+  // Email utente ottimizzata per non finire nello spam
   generateUserEmailContent(formData) {
     return `
       <!DOCTYPE html>
-      <html>
+      <html lang="it">
       <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Conferma iscrizione</title>
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { 
-            background: linear-gradient(135deg, #0073aa 0%, #005a87 100%); 
-            color: white; 
-            padding: 30px; 
-            text-align: center; 
-            border-radius: 10px 10px 0 0;
+          body { 
+            font-family: Arial, sans-serif; 
+            line-height: 1.6; 
+            color: #333333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
           }
-          .header h1 { margin: 0; font-size: 28px; }
+          .container { 
+            max-width: 600px; 
+            margin: 20px auto; 
+            background-color: #ffffff;
+            border: 1px solid #dddddd;
+          }
+          .header { 
+            background-color: #2c5aa0; 
+            color: white; 
+            padding: 30px 20px; 
+            text-align: center;
+          }
+          .header h1 { 
+            margin: 0; 
+            font-size: 24px;
+            font-weight: normal;
+          }
           .content { 
-            background-color: #ffffff; 
-            padding: 30px; 
-            border: 1px solid #e0e0e0;
-            border-radius: 0 0 10px 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 30px 20px;
           }
           .welcome { 
             font-size: 18px; 
-            color: #0073aa; 
+            color: #2c5aa0; 
             margin-bottom: 20px;
-            font-weight: bold;
           }
-          .message { 
+          .info-box { 
             background-color: #f0f8ff; 
             padding: 20px; 
-            border-left: 4px solid #0073aa;
+            border-left: 4px solid #2c5aa0;
             margin: 20px 0;
           }
           .important { 
             background-color: #fff3cd; 
-            padding: 15px; 
-            border-radius: 5px;
+            padding: 20px; 
             border: 1px solid #ffeaa7;
             margin: 20px 0;
           }
           .important h3 { 
             color: #856404; 
             margin-top: 0;
-          }
-          .button {
-            display: inline-block;
-            padding: 12px 30px;
-            background-color: #0073aa;
-            color: white;
-            text-decoration: none;
-            border-radius: 25px;
-            margin: 20px 0;
+            font-size: 16px;
           }
           .footer { 
-            text-align: center; 
-            margin-top: 30px; 
-            font-size: 12px; 
-            color: #666; 
+            background-color: #f8f9fa;
             padding: 20px;
-            border-top: 1px solid #e0e0e0;
+            text-align: center; 
+            font-size: 12px; 
+            color: #666666; 
+            border-top: 1px solid #e9ecef;
           }
-          .signature { 
-            margin-top: 30px; 
-            font-style: italic; 
+          .contact-info {
+            background-color: #e3f2fd;
+            padding: 15px;
+            margin: 20px 0;
+            border: 1px solid #bbdefb;
           }
+          ol, ul { margin: 10px 0; padding-left: 20px; }
+          li { margin: 5px 0; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1>Benvenuto in Agility Club Labora!</h1>
+            <h1>Agility Club Labora</h1>
+            <p style="margin: 10px 0 0 0;">Associazione Sportiva Dilettantistica</p>
           </div>
           
           <div class="content">
-            <p class="welcome">Ciao ${formData.nome},</p>
+            <p class="welcome">Gentile ${formData.nome} ${formData.cognome},</p>
             
-            <p>La tua iscrizione è stata ricevuta con successo!</p>
+            <p>la ringraziamo per aver compilato il modulo di iscrizione alla nostra associazione.</p>
             
-            <div class="message">
-              <p>Siamo felici di darti il benvenuto nella nostra associazione. La tua richiesta di iscrizione è stata registrata correttamente.</p>
+            <div class="info-box">
+              <p><strong>La sua richiesta di iscrizione è stata ricevuta correttamente</strong> e verrà elaborata dal nostro staff.</p>
             </div>
             
             <div class="important">
-              <h3>⚠️ Importante - Azione richiesta</h3>
-              <p><strong>Per completare l'iscrizione:</strong></p>
+              <h3>Documenti richiesti per completare l'iscrizione</h3>
               <ol>
-                <li>Trova in allegato a questa email il modulo di iscrizione con i tuoi dati</li>
-                <li><strong>Stampa il modulo</strong></li>
-                <li><strong>Firmalo</strong> negli appositi spazi</li>
-                <li><strong>Consegnalo</strong> presso la nostra sede durante il primo allenamento</li>
+                <li>Modulo di iscrizione allegato, stampato e firmato</li>
+                <li>Fotocopia del passaporto del cane con vaccinazioni aggiornate</li>
+                <li>Documento di identità del proprietario (solo per nuovi soci)</li>
               </ol>
+              <p><strong>Questi documenti dovranno essere consegnati durante il primo appuntamento.</strong></p>
             </div>
             
-            <p>Il modulo allegato contiene tutti i dati che hai inserito durante la registrazione online. Verificali e, se riscontri errori, comunicacelo tempestivamente.</p>
+            <h3>Informazioni sul corso</h3>
+            <p>Il nostro staff la contatterà entro 48 ore per fissare un appuntamento e fornire tutte le informazioni necessarie.</p>
             
-            <p><strong>Prossimi passi:</strong></p>
-            <ul>
-			  <li>Prendi appuntamento con l'istruttore</li>
-              <li>Inviaci una foto del passaporto del cane con le vaccinazioni</li>
-              <li>Porta il modulo firmato all'appuntamento</li>
-            </ul>
-            
-            <p>Per qualsiasi domanda o informazione, non esitare a contattarci.</p>
-            <div class="important" style="margin-top: 30px; background-color: #e8f4fd; border: 1px solid #0073aa;">
-    <h3 style="color: #0073aa; margin-top: 0;">💰 Modalità di Pagamento</h3>
-    <p><strong>IL PAGAMENTO DELL'ISCRIZIONE E/O DEI CORSI PUÒ ESSERE EFFETTUATO PRESSO IL CENTRO OPPURE TRAMITE TRASFERIMENTO BANCARIO, CON LE SEGUENTI COORDINATE:</strong></p>
-    <div style="background: white; padding: 15px; border-radius: 5px; margin: 10px 0;">
-        <p style="margin: 5px 0;"><strong>Intestatario:</strong> A.S.D. AGILITY CLUB LA BORA</p>
-        <p style="margin: 5px 0;"><strong>IBAN:</strong> IT73V0503402200000000003040</p>
-        <p style="margin: 5px 0;"><strong>BIC/SWIFT:</strong> BAPPIT21703</p>
-    </div>
-    <p style="font-size: 14px; color: #666;">Importante: Indica nella causale il tuo nome e cognome.</p>
-</div>
-            <div class="signature">
-              <p>A presto al nostro centro cinofilo!</p>
-              <p><strong>Il Team di Agility Club Labora</strong></p>
+            <div class="contact-info">
+              <h3 style="margin-top: 0; color: #1976d2;">Modalità di pagamento</h3>
+              <p><strong>Il pagamento può essere effettuato presso il centro oppure tramite bonifico bancario:</strong></p>
+              <p style="margin: 10px 0 5px 0;"><strong>Intestatario:</strong> A.S.D. AGILITY CLUB LA BORA</p>
+              <p style="margin: 5px 0;"><strong>IBAN:</strong> IT73V0503402200000000003040</p>
+              <p style="margin: 5px 0;"><strong>BIC/SWIFT:</strong> BAPPIT21703</p>
+              <p style="margin: 15px 0 5px 0; font-size: 14px;"><em>Causale: Iscrizione ${formData.nome} ${formData.cognome}</em></p>
             </div>
+            
+            <p>Per qualsiasi informazione, non esiti a contattarci all'indirizzo laboratrieste@gmail.com</p>
+            
+            <p style="margin-top: 30px;">Cordiali saluti,<br>
+            <strong>Lo Staff di Agility Club Labora</strong></p>
           </div>
           
           <div class="footer">
-            <p>Agility Club Labora - Associazione Sportiva Dilettantistica</p>
-            <p>Questa email è stata inviata a ${formData.email} in seguito alla compilazione del modulo di iscrizione online.</p>
-            <p>© ${new Date().getFullYear()} Agility Club Labora - Tutti i diritti riservati</p>
+            <p><strong>Agility Club Labora - A.S.D.</strong></p>
+            <p>Comunicazione inviata a ${formData.email} in seguito alla compilazione del modulo di iscrizione.</p>
+            <p>Anno ${new Date().getFullYear()} - Tutti i diritti riservati</p>
           </div>
         </div>
       </body>
@@ -500,7 +398,361 @@ generateRicevutaAdminEmail(ricevutaData) {
     `;
   }
 
-  // Metodo helper per formattare le date
+  // Email admin ottimizzata
+  generateAdminEmailContent(formData) {
+    return `
+      <!DOCTYPE html>
+      <html lang="it">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Nuova iscrizione</title>
+        <style>
+          body { 
+            font-family: Arial, sans-serif; 
+            line-height: 1.5; 
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+          }
+          .container { 
+            max-width: 700px; 
+            margin: 20px auto; 
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+          }
+          .header { 
+            background-color: #1565c0; 
+            color: white; 
+            padding: 20px; 
+            text-align: center;
+          }
+          .content { 
+            padding: 25px;
+          }
+          .section { 
+            margin-bottom: 25px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 20px;
+          }
+          .section:last-child {
+            border-bottom: none;
+          }
+          .section h3 { 
+            color: #1565c0; 
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 16px;
+          }
+          .field { 
+            margin: 8px 0;
+            display: flex;
+          }
+          .field-label { 
+            font-weight: bold;
+            min-width: 140px;
+            color: #555;
+          }
+          .field-value {
+            flex: 1;
+          }
+          .dog-info { 
+            background-color: #f8f9fa; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-left: 3px solid #1565c0;
+          }
+          .summary {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border: 1px solid #bbdefb;
+            margin-bottom: 20px;
+          }
+          .footer { 
+            background-color: #f8f9fa;
+            padding: 15px;
+            text-align: center; 
+            font-size: 12px; 
+            color: #666;
+            border-top: 1px solid #e9ecef;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2 style="margin: 0;">Nuova Iscrizione Ricevuta</h2>
+            <p style="margin: 10px 0 0 0;">Sistema Gestione Iscrizioni</p>
+          </div>
+          
+          <div class="content">
+            <div class="summary">
+              <h3 style="margin-top: 0;">Riepilogo iscrizione</h3>
+              <p><strong>Socio:</strong> ${formData.nome} ${formData.cognome}</p>
+              <p><strong>Email:</strong> ${formData.email}</p>
+              <p><strong>Data iscrizione:</strong> ${new Date().toLocaleDateString('it-IT')}</p>
+            </div>
+            
+            <div class="section">
+              <h3>Dati anagrafici</h3>
+              <div class="field">
+                <span class="field-label">Nome completo:</span>
+                <span class="field-value">${formData.nome} ${formData.cognome}</span>
+              </div>
+              <div class="field">
+                <span class="field-label">Data di nascita:</span>
+                <span class="field-value">${this.formatDate(formData.natoIl)} - ${formData.natoA}</span>
+              </div>
+              <div class="field">
+                <span class="field-label">Residenza:</span>
+                <span class="field-value">${formData.residenza}, ${formData.comune} (${formData.provincia}) ${formData.cap}</span>
+              </div>
+              <div class="field">
+                <span class="field-label">Codice Fiscale:</span>
+                <span class="field-value">${formData.codiceFiscale}</span>
+              </div>
+              <div class="field">
+                <span class="field-label">Contatti:</span>
+                <span class="field-value">${formData.email} - Tel. ${formData.telefono}</span>
+              </div>
+            </div>
+            
+            ${formData.nomeCane1 ? `
+            <div class="section">
+              <h3>Informazioni cane</h3>
+              <div class="dog-info">
+                <div class="field">
+                  <span class="field-label">Nome:</span>
+                  <span class="field-value">${formData.nomeCane1}</span>
+                </div>
+                <div class="field">
+                  <span class="field-label">Sesso e razza:</span>
+                  <span class="field-value">${formData.sessoCane1 === 'M' ? 'Maschio' : formData.sessoCane1 === 'F' ? 'Femmina' : 'Non specificato'} - ${formData.razzaCane1 || 'Razza non specificata'}</span>
+                </div>
+                <div class="field">
+                  <span class="field-label">Altezza:</span>
+                  <span class="field-value">${formData.altezzaCane1 ? formData.altezzaCane1 + ' cm' : 'Non specificata'}</span>
+                </div>
+                <div class="field">
+                  <span class="field-label">Microchip:</span>
+                  <span class="field-value">${formData.microchipCane1 || 'Non specificato'}</span>
+                </div>
+                <div class="field">
+                  <span class="field-label">Data nascita:</span>
+                  <span class="field-value">${this.formatDate(formData.dataNascitaCane1) || 'Non specificata'}</span>
+                </div>
+                <div class="field">
+                  <span class="field-label">Proprietario:</span>
+                  <span class="field-value">${formData.proprietarioCane1 || 'Non specificato'}</span>
+                </div>
+                <div class="field">
+                  <span class="field-label">Conduttore:</span>
+                  <span class="field-value">${formData.conduttoreCane1 || 'Non specificato'}</span>
+                </div>
+              </div>
+            </div>
+            ` : ''}
+            
+            ${formData.aggiungiSecondoCane && formData.nomeCane2 ? `
+            <div class="section">
+              <h3>Secondo cane</h3>
+              <div class="dog-info">
+                <div class="field">
+                  <span class="field-label">Nome:</span>
+                  <span class="field-value">${formData.nomeCane2}</span>
+                </div>
+                <div class="field">
+                  <span class="field-label">Sesso e razza:</span>
+                  <span class="field-value">${formData.sessoCane2 === 'M' ? 'Maschio' : formData.sessoCane2 === 'F' ? 'Femmina' : 'Non specificato'} - ${formData.razzaCane2 || 'Razza non specificata'}</span>
+                </div>
+                <div class="field">
+                  <span class="field-label">Altezza:</span>
+                  <span class="field-value">${formData.altezzaCane2 ? formData.altezzaCane2 + ' cm' : 'Non specificata'}</span>
+                </div>
+                <div class="field">
+                  <span class="field-label">Microchip:</span>
+                  <span class="field-value">${formData.microchipCane2 || 'Non specificato'}</span>
+                </div>
+                <div class="field">
+                  <span class="field-label">Data nascita:</span>
+                  <span class="field-value">${this.formatDate(formData.dataNascitaCane2) || 'Non specificata'}</span>
+                </div>
+                <div class="field">
+                  <span class="field-label">Proprietario:</span>
+                  <span class="field-value">${formData.proprietarioCane2 || 'Non specificato'}</span>
+                </div>
+                <div class="field">
+                  <span class="field-label">Conduttore:</span>
+                  <span class="field-value">${formData.conduttoreCane2 || 'Non specificato'}</span>
+                </div>
+              </div>
+            </div>
+            ` : ''}
+          </div>
+          
+          <div class="footer">
+            <p>Email generata automaticamente dal sistema - ${new Date().toLocaleString('it-IT')}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  // Email ricevuta per utente
+  generateRicevutaUserEmail(ricevutaData) {
+    return `
+      <!DOCTYPE html>
+      <html lang="it">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Ricevuta pagamento</title>
+        <style>
+          body { 
+            font-family: Arial, sans-serif; 
+            line-height: 1.6; 
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+          }
+          .container { 
+            max-width: 600px; 
+            margin: 20px auto; 
+            background-color: #ffffff;
+            border: 1px solid #dddddd;
+          }
+          .header { 
+            background-color: #2c3e50; 
+            color: white; 
+            padding: 25px 20px; 
+            text-align: center;
+          }
+          .content { 
+            padding: 30px 20px;
+          }
+          .receipt-box { 
+            background-color: #f8f9fa; 
+            padding: 20px; 
+            border: 1px solid #dee2e6;
+            margin: 20px 0;
+          }
+          .amount { 
+            font-size: 22px; 
+            color: #28a745; 
+            font-weight: bold;
+            margin: 15px 0;
+          }
+          .footer { 
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center; 
+            font-size: 12px; 
+            color: #666;
+            border-top: 1px solid #e9ecef;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0;">Ricevuta di Pagamento</h1>
+            <p style="margin: 10px 0 0 0;">Agility Club Labora</p>
+          </div>
+          
+          <div class="content">
+            <p>Gentile <strong>${ricevutaData.ricevutoDa}</strong>,</p>
+            
+            <p>confermiamo di aver ricevuto il pagamento come di seguito dettagliato.</p>
+            
+            <div class="receipt-box">
+              <h3>Ricevuta n. ${ricevutaData.numeroRicevuta}</h3>
+              <p><strong>Data:</strong> ${this.formatDate(ricevutaData.dataRicevuta)}</p>
+              <p><strong>Causale:</strong> ${ricevutaData.ricevutaPer}</p>
+              <p><strong>Modalità:</strong> ${ricevutaData.modalitaPagamento}</p>
+              <div class="amount">Importo: € ${parseFloat(ricevutaData.denaroRicevuto).toFixed(2)}</div>
+            </div>
+            
+            <p>La ricevuta in formato PDF è allegata a questa comunicazione.</p>
+            
+            <p>Cordiali saluti,<br><strong>Agility Club Labora</strong></p>
+          </div>
+          
+          <div class="footer">
+            <p>Agility Club Labora - Associazione Sportiva Dilettantistica</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  // Email ricevuta per admin
+  generateRicevutaAdminEmail(ricevutaData) {
+    return `
+      <!DOCTYPE html>
+      <html lang="it">
+      <head>
+        <meta charset="UTF-8">
+        <title>Ricevuta emessa</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.5; color: #333; margin: 0; padding: 0; }
+          .container { max-width: 700px; margin: 20px auto; background: white; border: 1px solid #ddd; }
+          .header { background-color: #34495e; color: white; padding: 20px; text-align: center; }
+          .content { padding: 25px; }
+          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          th, td { text-align: left; padding: 10px; border-bottom: 1px solid #ddd; }
+          th { background-color: #ecf0f1; }
+          .amount { font-size: 18px; color: #27ae60; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2 style="margin: 0;">Ricevuta Emessa</h2>
+            <p style="margin: 10px 0 0 0;">Sistema Amministrativo</p>
+          </div>
+          
+          <div class="content">
+            <h3>Ricevuta n. ${ricevutaData.numeroRicevuta}</h3>
+            
+            <table>
+              <tr><td><strong>Data</strong></td><td>${this.formatDate(ricevutaData.dataRicevuta)}</td></tr>
+              <tr><td><strong>Pagante</strong></td><td>${ricevutaData.ricevutoDa}</td></tr>
+              <tr><td><strong>Email</strong></td><td>${ricevutaData.emailPagante}</td></tr>
+              <tr><td><strong>Causale</strong></td><td>${ricevutaData.ricevutaPer}</td></tr>
+              <tr><td><strong>Modalità</strong></td><td>${ricevutaData.modalitaPagamento}</td></tr>
+              <tr><td><strong>Istruttore</strong></td><td>${ricevutaData.educatoreTecnico}</td></tr>
+              <tr><td><strong>Importo</strong></td><td class="amount">€ ${parseFloat(ricevutaData.denaroRicevuto).toFixed(2)}</td></tr>
+            </table>
+            
+            <p><strong>Timestamp:</strong> ${new Date().toLocaleString('it-IT')}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  // Helper functions
+  ensureArray(value) {
+    return Array.isArray(value) ? value : [value];
+  }
+
+  extractEmail(fromString) {
+    if (!fromString) return process.env.EMAIL_FROM;
+    const match = fromString.match(/<(.+)>/);
+    return match ? match[1] : fromString;
+  }
+
+  extractName(fromString) {
+    if (!fromString) return 'Agility Club Labora';
+    const match = fromString.match(/^"?(.+?)"?\s*</);
+    return match ? match[1] : '';
+  }
+
   formatDate(dateString) {
     if (!dateString) return '';
     const date = new Date(dateString);
