@@ -42,6 +42,7 @@ class EmailService {
         },
         subject: mailOptions.subject,
         html: mailOptions.html,
+        text: mailOptions.text || this.htmlToText(mailOptions.html),
         
         // Ottimizzazioni anti-spam
         tracking_settings: {
