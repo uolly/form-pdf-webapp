@@ -42,7 +42,8 @@ class EmailService {
         },
         subject: mailOptions.subject,
         html: mailOptions.html,
-        text: mailOptions.text || this.htmlToText(mailOptions.html),
+        text: 'Questa email contiene informazioni importanti. Si prega di visualizzare la versione HTML per tutti i dettagli.', // Testo fisso
+
         
         // Ottimizzazioni anti-spam
         tracking_settings: {
@@ -186,7 +187,7 @@ const adminEmailsArray = adminEmailsString.split(',').map(email => email.trim())
 const adminMailOptions = {
   from: `"Sistema Amministrativo" <${process.env.EMAIL_FROM}>`,
   to: adminEmailsArray, // Array invece di stringa
-  subject: `Amministrazione - Ricevuta n. ${ricevutaData.numeroRicevuta} emessa`,
+  subject: `Ricevuta n. ${ricevutaData.numeroRicevuta} - Agility Club Labora`,
   html: this.generateRicevutaAdminEmail(ricevutaData),
         attachments: [
           {
