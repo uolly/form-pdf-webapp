@@ -179,12 +179,14 @@ class EmailService {
       };
 
       // 2. EMAIL AGLI AMMINISTRATORI
-      const adminEmails = process.env.EMAIL_RICEVUTE_ADMIN || process.env.EMAIL_TO;
-      const adminMailOptions = {
-        from: `"Sistema Amministrativo" <${process.env.EMAIL_FROM}>`,
-        to: adminEmails,
-        subject: `Amministrazione - Ricevuta n. ${ricevutaData.numeroRicevuta} emessa`,
-        html: this.generateRicevutaAdminEmail(ricevutaData),
+      const adminEmailsString = process.env.EMAIL_RICEVUTE_ADMIN || process.env.EMAIL_TO;
+const adminEmailsArray = adminEmailsString.split(',').map(email => email.trim());
+
+const adminMailOptions = {
+  from: `"Sistema Amministrativo" <${process.env.EMAIL_FROM}>`,
+  to: adminEmailsArray, // Array invece di stringa
+  subject: `Amministrazione - Ricevuta n. ${ricevutaData.numeroRicevuta} emessa`,
+  html: this.generateRicevutaAdminEmail(ricevutaData),
         attachments: [
           {
             filename: pdfFileName,
