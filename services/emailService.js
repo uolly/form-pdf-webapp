@@ -104,7 +104,7 @@ class EmailService {
       // 1. EMAIL ALL'AMMINISTRATORE
       const adminMailOptions = {
         from: `"Agility Club Labora" <${process.env.EMAIL_FROM}>`,
-        to: process.env.EMAIL_TO,
+        to: 'laboratrieste@gmail.com',
         cc: 'walter.cleva@gmail.com',
         subject: `Nuova iscrizione ricevuta - ${formData.nome} ${formData.cognome}`,
         html: this.generateAdminEmailContent(formData),
