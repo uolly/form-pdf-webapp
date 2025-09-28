@@ -368,21 +368,18 @@ const adminMailOptions = {
               <ol>
                 <li>Modulo di iscrizione allegato, stampato e firmato</li>
                 <li>Fotocopia del passaporto del cane con vaccinazioni aggiornate</li>
-                <li>Documento di identità del proprietario (solo per nuovi soci)</li>
-              </ol>
+                </ol>
               <p><strong>Questi documenti dovranno essere consegnati durante il primo appuntamento.</strong></p>
             </div>
             
-            <h3>Informazioni sul corso</h3>
-            <p>Il nostro staff la contatterà entro 48 ore per fissare un appuntamento e fornire tutte le informazioni necessarie.</p>
-            
+                        
             <div class="contact-info">
               <h3 style="margin-top: 0; color: #1976d2;">Modalità di pagamento</h3>
               <p><strong>Il pagamento può essere effettuato presso il centro oppure tramite bonifico bancario:</strong></p>
               <p style="margin: 10px 0 5px 0;"><strong>Intestatario:</strong> A.S.D. AGILITY CLUB LA BORA</p>
               <p style="margin: 5px 0;"><strong>IBAN:</strong> IT73V0503402200000000003040</p>
               <p style="margin: 5px 0;"><strong>BIC/SWIFT:</strong> BAPPIT21703</p>
-              <p style="margin: 15px 0 5px 0; font-size: 14px;"><em>Causale: Iscrizione ${formData.nome} ${formData.cognome}</em></p>
+              <p style="margin: 15px 0 5px 0; font-size: 14px;"><em>Nella causale indicare nome e cognome</em></p>
             </div>
             
             <p>Per qualsiasi informazione, non esiti a contattarci all'indirizzo laboratrieste@gmail.com</p>
