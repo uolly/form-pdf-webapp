@@ -86,7 +86,7 @@ class PdfService {
     try {
       // PULISCI I DATI PRIMA DI USARLI
       const cleanData = this.cleanFormData(formData);
-      
+
       console.log('Dati originali:', {
         residenza: formData.residenza,
         natoA: formData.natoA
@@ -95,11 +95,12 @@ class PdfService {
         residenza: cleanData.residenza,
         natoA: cleanData.natoA
       });
-      
+      console.log('Firma elettronica presente:', !!cleanData.signatureDataUrl);
+
       // Carica il PDF template
       const pdfPath = path.join(__dirname, '../templates/iscrizione.pdf');
       const existingPdfBytes = await fs.readFile(pdfPath);
-      
+
       // Carica il documento PDF
       const pdfDoc = await PDFDocument.load(existingPdfBytes);
       
@@ -111,12 +112,12 @@ class PdfService {
         try {
           if (value !== undefined && value !== null && value !== '') {
             const field = form.getTextField(fieldName);
-            // Usa i dati puliti e assicurati che non ci siano caratteri problematici
-            const cleanValue = this.decodeHtmlEntities(String(value));
-            field.setText(cleanValue);
+            // I dati sono già puliti da cleanFormData, non serve ri-decodificare
+            field.setText(String(value));
+            console.log(`✓ Campo '${fieldName}' compilato con: ${String(value).substring(0, 30)}`);
           }
         } catch (e) {
-          console.log(`Campo ${fieldName} non trovato nel PDF`);
+          console.log(`❌ Campo '${fieldName}' non trovato nel PDF`);
         }
       };
       
@@ -177,12 +178,129 @@ class PdfService {
       // Gestisci checkbox privacy
       checkFieldIfExists('consensoPrivacy', cleanData.consensoPrivacy);
       checkFieldIfExists('consensoSocial', cleanData.consensoSocial);
+       fillFieldIfExists('nome_privacy', cleanData.nome);
+      fillFieldIfExists('cognome_privacy', cleanData.cognome);
       // Opzionale: Aggiungi data di compilazione se c'è un campo per questo
-      fillFieldIfExists('dataCompilazione', new Date().toLocaleDateString('it-IT'));
-      
+      fillFieldIfExists('dataCompilazione_privacy', new Date().toLocaleDateString('it-IT'));
+
+      // INSERISCI LA FIRMA ELETTRONICA NEL PDF
+      if (cleanData.signatureDataUrl && cleanData.signatureDataUrl !== 'null') {
+        try {
+          console.log('Inserimento firma elettronica nel PDF...');
+
+          // Rimuovi il prefisso "data:image/png;base64," dal data URL
+          const base64Data = cleanData.signatureDataUrl.replace(/^data:image\/\w+;base64,/, '');
+          const signatureBytes = Buffer.from(base64Data, 'base64');
+
+          console.log('Firma bytes length:', signatureBytes.length);
+
+          // Embed l'immagine PNG nel PDF (con timeout per evitare blocchi)
+          const signatureImage = await Promise.race([
+            pdfDoc.embedPng(signatureBytes),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout embedding signature')), 5000))
+          ]);
+
+          // Ottieni la prima pagina (o l'ultima se la firma va in fondo)
+          const pages = pdfDoc.getPages();
+          const firstPage = pages[0];
+          const secondPage = pages[1];
+          const thirdPage = pages[2];
+
+
+
+          // Dimensioni della firma (proporzionali)
+          let signatureWidth = 270;
+          let signatureHeight = 40;
+
+          // Posizione della firma (in basso a destra della prima pagina)
+          // Coordinate: x=distanza da sinistra, y=distanza dal basso
+          const { width: pageWidth, height: pageHeight } = firstPage.getSize();
+          let xPosition = pageWidth - signatureWidth - 75; // 50px dal bordo destro
+          let yPosition = 420; 
+
+          // Disegna la firma sulla pagina
+          firstPage.drawImage(signatureImage, {
+            x: xPosition,
+            y: yPosition,
+            width: signatureWidth,
+            height: signatureHeight,
+            opacity: 1
+          });
+
+          // Aggiungi etichetta "Firma:" sopra la firma
+          const timestamp = new Date().toLocaleString('it-IT');
+          const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+          firstPage.drawText(`Firma digitale  apposta il: ${timestamp}`, {
+            x: xPosition,
+            y: yPosition + signatureHeight + 5,
+            size: 8,
+            font: helveticaFont,
+            color: rgb(0.3, 0.3, 0.3)
+          });
+
+          
+          //seconda pagina
+          
+          xPosition = pageWidth - signatureWidth; // 50px dal bordo destro
+          yPosition = 135; 
+          signatureWidth = 170;
+          signatureHeight = 20;
+
+          // Disegna la firma sulla pagina
+          secondPage.drawImage(signatureImage, {
+            x: xPosition,
+            y: yPosition,
+            width: signatureWidth,
+            height: signatureHeight,
+            opacity: 1
+          });
+
+          // Aggiungi etichetta "Firma:" sopra la firma
+         
+          secondPage.drawText(`Firma digitale apposta il: ${timestamp}`, {
+            x: xPosition,
+            y: yPosition + signatureHeight + 5,
+            size: 8,
+            font: helveticaFont,
+            color: rgb(0.3, 0.3, 0.3)
+          });
+
+         //terza pagina
+
+          xPosition = pageWidth - signatureWidth - 95; // 50px dal bordo destro
+          yPosition = 60; 
+          signatureWidth = 170;
+          signatureHeight = 40;
+
+          // Disegna la firma sulla pagina
+          thirdPage.drawImage(signatureImage, {
+            x: xPosition,
+            y: yPosition,
+            width: signatureWidth,
+            height: signatureHeight,
+            opacity: 1
+          });
+
+          // Aggiungi etichetta "Firma:" sopra la firma
+         
+          thirdPage.drawText(`Firma digitale apposta il: ${timestamp}`, {
+            x: xPosition,
+            y: yPosition + signatureHeight + 5,
+            size: 8,
+            font: helveticaFont,
+            color: rgb(0.3, 0.3, 0.3)
+          });
+
+          console.log('✓ Firma elettronica inserita nel PDF');
+        } catch (signatureError) {
+          console.error('Errore inserimento firma nel PDF:', signatureError);
+          // Continua comunque con il salvataggio del PDF
+        }
+      }
+
       // Appiattisci il form per renderlo non modificabile (opzionale)
       form.flatten();
-      
+
       // Salva il PDF modificato
       const pdfBytes = await pdfDoc.save();
       

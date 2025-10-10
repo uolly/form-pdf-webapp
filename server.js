@@ -73,6 +73,14 @@ app.use('/api/form', formRoutes);
 
 app.use('/api/ricevute', ricevuteRoutes);
 
+// Serve static test form (solo in development)
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/test-form', (req, res) => {
+    res.sendFile(__dirname + '/test-iscrizione-form.html');
+    //res.sendFile(__dirname + '/test-vecchia-iscrizione-form.html');
+  });
+}
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date() });

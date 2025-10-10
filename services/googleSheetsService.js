@@ -15,7 +15,7 @@ class GoogleSheetsService {
 
   async appendData(formData) {
     const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
-    const range = 'Iscrizioni!A:AK'; // Aggiornato per includere tutte le colonne necessarie
+    const range = 'Iscrizioni!A:AU'; // Aggiornato per consenso regolamento + newsletter + verificationStatus e token
     
     // Prepara i valori nell'ordine corretto
     const values = [[
@@ -60,9 +60,24 @@ class GoogleSheetsService {
       // Consenso privacy
  	formData.consensoPrivacy ? 'Checked' : 'Not checked',
 	// Consenso social
-	formData.consensoSocial ? 'Checked' : 'Not checked'
+	formData.consensoSocial ? 'Checked' : 'Not checked',
+
+      // Consensi firma digitale
+      formData.consensoRegolamento ? 'Checked' : 'Not checked',
+      formData.consensoNewsletter ? 'Checked' : 'Not checked',
+
+      // Metadati firma elettronica
+      formData.signatureTimestamp || '',
+      formData.signatureHash || '',
+      formData.documentHash || '',
+      formData.signatureIP || '',
+      formData.signatureUserAgent || '',
+
+      // Verifica email (double opt-in)
+      formData.verificationStatus || 'PENDING',
+      formData.verificationToken || ''
     ]];
-    
+
     try {
       const response = await this.sheets.spreadsheets.values.append({
         spreadsheetId,
@@ -83,9 +98,8 @@ class GoogleSheetsService {
   // Metodo helper per creare/aggiornare gli headers nel Google Sheet
   async updateHeaders() {
     const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
-    //const range = 'Sheet1!A1:AK1';
-    const range = 'IscrizioniOnLine!A1:AK1';
-    
+    const range = 'Iscrizioni!A1:AU1'; // Aggiornato con consenso regolamento + newsletter e verifica email
+
     const headers = [
       'Data/Ora',
       // Dati personali
@@ -121,7 +135,20 @@ class GoogleSheetsService {
       'Proprietario Cane 2',
       'Conduttore Cane 2',
       // Privacy
-      'Consenso Privacy'
+      'Consenso Privacy',
+      'Consenso Social',
+      // Consensi firma digitale
+      'Consenso Regolamento',
+      'Consenso Newsletter',
+      // Firma elettronica
+      'Timestamp Firma',
+      'Hash Firma',
+      'Hash Documento',
+      'IP Firma (anonimizzato)',
+      'User Agent Firma',
+      // Double opt-in
+      'Status Verifica Email',
+      'Token Verifica (parziale)'
     ];
     
     const values = [headers];

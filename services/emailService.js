@@ -25,7 +25,22 @@ class EmailService {
   // Metodo principale per invio email con SendGrid
   async sendEmail(mailOptions) {
     console.log('📧 SENDEMAIL chiamato - sendGridEnabled:', this.sendGridEnabled);
-    
+
+    // Modalità TEST: simula invio senza inviare realmente
+    if (process.env.DISABLE_EMAIL_SENDING === 'true') {
+      console.log('⚠️ MODALITÀ TEST: Email NON inviata (DISABLE_EMAIL_SENDING=true)');
+      console.log('📧 Email simulata:', {
+        to: mailOptions.to,
+        subject: mailOptions.subject,
+        attachments: mailOptions.attachments?.length || 0
+      });
+      return {
+        method: 'test-mode',
+        messageId: 'test-' + Date.now(),
+        accepted: Array.isArray(mailOptions.to) ? mailOptions.to : [mailOptions.to]
+      };
+    }
+
     if (!this.sendGridEnabled) {
       console.log('❌ SendGrid non abilitato, errore!');
       throw new Error('SendGrid non configurato - controllare SENDGRID_API_KEY');
@@ -94,27 +109,39 @@ class EmailService {
   }
 
   // Metodo per iscrizioni - usa SendGrid
-  async sendFormEmail(formData, pdfBuffer) {
+  async sendFormEmail(formData, pdfBuffer, signatureLog = null) {
     try {
       console.log('📧 SENDFORMEMAIL chiamato per:', formData.nome, formData.cognome);
-      
+
       const timestamp = Date.now();
       const pdfFileName = `modulo_iscrizione_${formData.cognome}_${formData.nome}_${timestamp}.pdf`;
       
       // 1. EMAIL ALL'AMMINISTRATORE
+      const attachments = [
+        {
+          filename: pdfFileName,
+          content: pdfBuffer,
+          contentType: 'application/pdf'
+        }
+      ];
+
+      // Aggiungi signature log JSON se presente
+      if (signatureLog) {
+        const logFileName = `signature_log_${formData.cognome}_${formData.nome}_${timestamp}.json`;
+        attachments.push({
+          filename: logFileName,
+          content: Buffer.from(JSON.stringify(signatureLog, null, 2), 'utf-8'),
+          contentType: 'application/json'
+        });
+      }
+
       const adminMailOptions = {
         from: `"Agility Club Labora" <${process.env.EMAIL_FROM}>`,
         to: 'laboratrieste@gmail.com',
         cc: 'walter.cleva@gmail.com',
         subject: `Nuova iscrizione ricevuta - ${formData.nome} ${formData.cognome}`,
-        html: this.generateAdminEmailContent(formData),
-        attachments: [
-          {
-            filename: pdfFileName,
-            content: pdfBuffer,
-            contentType: 'application/pdf'
-          }
-        ]
+        html: this.generateAdminEmailContent(formData, signatureLog),
+        attachments: attachments
       };
 
       // 2. EMAIL ALL'UTENTE
@@ -122,7 +149,7 @@ class EmailService {
         from: `"Agility Club Labora" <${process.env.EMAIL_FROM}>`,
         to: formData.email,
         subject: 'Conferma iscrizione - Agility Club Labora',
-        html: this.generateUserEmailContent(formData),
+        html: this.generateUserEmailContent(formData, signatureLog),
         attachments: [
           {
             filename: pdfFileName,
@@ -270,7 +297,17 @@ const adminMailOptions = {
   }
 
   // Email utente ottimizzata per non finire nello spam
-  generateUserEmailContent(formData) {
+  generateUserEmailContent(formData, signatureLog = null) {
+    const signatureInfo = signatureLog ? `
+      <div class="info-box" style="background-color: #e8f5e9; border-left-color: #4caf50;">
+        <h3 style="margin-top: 0; color: #2e7d32;">✓ Documento firmato digitalmente</h3>
+        <p><strong>Data e ora firma:</strong> ${new Date(signatureLog.signatureTimestamp).toLocaleString('it-IT')}</p>
+        <p><strong>ID Documento:</strong> ${signatureLog.documentId}</p>
+        <p><strong>Hash documento:</strong> <code style="font-size: 11px; word-break: break-all;">${signatureLog.documentHash.substring(0, 32)}...</code></p>
+        <p style="margin-bottom: 0;"><small>Il documento allegato contiene la tua firma elettronica e ha pieno valore probatorio ai sensi del Regolamento eIDAS (UE) 910/2014.</small></p>
+      </div>
+    ` : '';
+
     return `
       <!DOCTYPE html>
       <html lang="it">
@@ -362,7 +399,9 @@ const adminMailOptions = {
             <div class="info-box">
               <p><strong>La sua richiesta di iscrizione è stata ricevuta correttamente</strong> e verrà elaborata dal nostro staff.</p>
             </div>
-            
+
+            ${signatureInfo}
+
             <div class="important">
               <h3>Documenti richiesti per completare l'iscrizione</h3>
               <ol>
@@ -400,7 +439,43 @@ const adminMailOptions = {
   }
 
   // Email admin ottimizzata
-  generateAdminEmailContent(formData) {
+  generateAdminEmailContent(formData, signatureLog = null) {
+    const signatureSection = signatureLog ? `
+      <div class="section">
+        <h3>🔐 Firma Elettronica</h3>
+        <div style="background-color: #e8f5e9; padding: 15px; border-left: 3px solid #4caf50;">
+          <div class="field">
+            <span class="field-label">Timestamp firma:</span>
+            <span class="field-value">${new Date(signatureLog.signatureTimestamp).toLocaleString('it-IT')}</span>
+          </div>
+          <div class="field">
+            <span class="field-label">ID Documento:</span>
+            <span class="field-value"><code>${signatureLog.documentId}</code></span>
+          </div>
+          <div class="field">
+            <span class="field-label">Hash documento:</span>
+            <span class="field-value"><code style="font-size: 10px; word-break: break-all;">${signatureLog.documentHash}</code></span>
+          </div>
+          <div class="field">
+            <span class="field-label">Hash firma:</span>
+            <span class="field-value"><code style="font-size: 10px; word-break: break-all;">${signatureLog.signatureHash}</code></span>
+          </div>
+          <div class="field">
+            <span class="field-label">IP (anon.):</span>
+            <span class="field-value">${signatureLog.technical.ipAddress}</span>
+          </div>
+          <div class="field">
+            <span class="field-label">User Agent:</span>
+            <span class="field-value">${signatureLog.technical.userAgent}</span>
+          </div>
+          <div class="field">
+            <span class="field-label">GDPR Compliant:</span>
+            <span class="field-value">✓ Sì</span>
+          </div>
+        </div>
+      </div>
+    ` : '';
+
     return `
       <!DOCTYPE html>
       <html lang="it">
@@ -590,8 +665,10 @@ const adminMailOptions = {
               </div>
             </div>
             ` : ''}
+
+            ${signatureSection}
           </div>
-          
+
           <div class="footer">
             <p>Email generata automaticamente dal sistema - ${new Date().toLocaleString('it-IT')}</p>
           </div>

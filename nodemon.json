@@ -1,0 +1,17 @@
+{
+  "watch": [
+    "server.js",
+    "routes/**/*.js",
+    "services/**/*.js"
+  ],
+  "ignore": [
+    "logs/**/*",
+    "verification_tokens/**/*",
+    "archive/**/*",
+    "templates/debug_*.pdf",
+    "*.html",
+    "test-*.js"
+  ],
+  "ext": "js,json",
+  "delay": 1000
+}

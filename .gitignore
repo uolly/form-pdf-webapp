@@ -20,6 +20,20 @@ yarn-debug.log*
 yarn-error.log*
 *.log
 
+# Logs firma elettronica (contengono dati sensibili)
+logs/*.json
+!logs/README.md
+
+# Token verifica email (GDPR - dati sensibili)
+verification_tokens/*.json
+!verification_tokens/README.md
+
+# Archivio documenti (dati personali)
+archive/**/*.pdf
+archive/**/*.json
+archive/**/*.txt
+!archive/README.md
+
 # OS
 .DS_Store
 Thumbs.db
