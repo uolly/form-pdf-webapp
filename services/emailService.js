@@ -405,11 +405,11 @@ const adminMailOptions = {
            <div class="important">
               <h3>Documenti richiesti per completare l'iscrizione</h3>
               ${signatureLog ? `
-                <p><strong>✓ Modulo di iscrizione:</strong> Già firmato digitalmente, non è necessario stamparlo né consegnarlo, lo abbiamo già ricevuto digitalmente.</p>
+                <p><strong>✓ Modulo di iscrizione:</strong> Già firmato digitalmente, non è necessario stamparlo né consegnarlo.</p>
               ` : `
                 <p><strong>Modulo di iscrizione:</strong> Il modulo allegato deve essere stampato, firmato e consegnato durante il primo appuntamento.</p>
               `}
-              <p><strong>Passaporto del cane:</strong> La fotocopia del passaporto con vaccinazioni aggiornate può essere inviata:</p>
+              <p><strong>Passaporto del cane:</strong> La fotocopia del passaporto del cane con vaccinazioni aggiornate può essere inviata:</p>
               <ul style="margin: 10px 0;">
                 <li>Via email a: <a href="mailto:laboratrieste@gmail.com" style="color: #2c5aa0;">laboratrieste@gmail.com</a></li>
                 <li>Via WhatsApp al: <a href="https://wa.me/393500693832" style="color: #25D366;">+39 350 0693832</a></li>
