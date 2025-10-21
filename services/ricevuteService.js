@@ -256,23 +256,23 @@ async salvaRicevuta(ricevutaData) {
 
     try {
       // Trova la prima riga libera nella colonna B del foglio educatore (partendo dalla riga 19)
-      const colonnaB = await this.sheets.spreadsheets.values.get({
+      const colonnaC = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
-        range: `${educatore}!B19:C`
+        range: `${educatore}!C19:C`
       });
 
       let primaRigaLibera = 19;
-      if (colonnaB.data.values && colonnaB.data.values.length > 0) {
+      if (colonnaC.data.values && colonnaB.data.values.length > 0) {
         // Trova la prima cella vuota nella colonna B a partire dalla riga 19
         for (let i = 0; i < colonnaB.data.values.length; i++) {
-          if (!colonnaB.data.values[i][0] || colonnaB.data.values[i][0] === '') {
+          if (!colonnaC.data.values[i][0] || colonnaC.data.values[i][0] === '') {
             primaRigaLibera = 19 + i;
             break;
           }
         }
         // Se tutte le celle sono piene, aggiungi alla fine
-        if (primaRigaLibera === 19 && colonnaB.data.values.length > 0) {
-          primaRigaLibera = 19 + colonnaB.data.values.length;
+        if (primaRigaLibera === 19 && colonnaC.data.values.length > 0) {
+          primaRigaLibera = 19 + colonnaC.data.values.length;
         }
       }
 
