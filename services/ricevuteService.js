@@ -130,7 +130,7 @@ async salvaRicevuta(ricevutaData) {
       range: 'Cassa!C:C'
     });
 
-    let primaRigaLibera = 1;
+    let primaRigaLibera = 4;
     if (colonnaC.data.values) {
       // Trova la prima cella vuota nella colonna C
       for (let i = 0; i < colonnaC.data.values.length; i++) {
@@ -258,7 +258,7 @@ async salvaRicevuta(ricevutaData) {
       // Trova la prima riga libera nella colonna B del foglio educatore (partendo dalla riga 19)
       const colonnaB = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
-        range: `${educatore}!B19:B`
+        range: `${educatore}!B19:C`
       });
 
       let primaRigaLibera = 19;
