@@ -10,6 +10,7 @@ node_modules/
 test-*.html
 test-*.js
 comandi.txt
+test-locale/
 
 # PDF di debug
 templates/debug_*.pdf
@@ -45,3 +46,6 @@ Thumbs.db
 # Temporanei
 *.tmp
 *.temp
+
+MODIFICHE-IMPLEMENTATE.md
+specifiche.md
