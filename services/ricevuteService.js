@@ -279,13 +279,41 @@ async salvaRicevuta(ricevutaData) {
       // Determina il nome/pseudonimo da usare
       const nomeDaUsare = ricevutaData.pseudonimo || ricevutaData.ricevutoDa;
 
-      // Prepara i dati per il foglio educatore
-      const rangeEducatore = `${educatore}!B${primaRigaLibera}:E${primaRigaLibera}`;
+      // Determina in quale colonna salvare l'importo
+      const importo = parseInt(ricevutaData.denaroRicevuto);
+      const modalitaPagamento = ricevutaData.modalitaPagamento.toLowerCase();
+      const inviaRicevuta = ricevutaData.inviaRicevuta !== false; // Default true
+
+      let importoBonifico = '';  // Colonna I
+      let importoContantiConRicevuta = '';  // Colonna J
+      let importoContantiSenzaRicevuta = '';  // Colonna K
+
+      if (modalitaPagamento === 'bonifico' || modalitaPagamento === 'pos' || modalitaPagamento === 'paypal') {
+        // Bonifico/POS/PayPal → Colonna I
+        importoBonifico = importo;
+      } else if (modalitaPagamento === 'contanti') {
+        if (inviaRicevuta) {
+          // Contanti CON ricevuta → Colonna J
+          importoContantiConRicevuta = importo;
+        } else {
+          // Contanti SENZA ricevuta → Colonna K
+          importoContantiSenzaRicevuta = importo;
+        }
+      }
+
+      // Prepara i dati per il foglio educatore (B fino a K)
+      const rangeEducatore = `${educatore}!B${primaRigaLibera}:K${primaRigaLibera}`;
       const valuesEducatore = [[
         ricevutaData.dataRicevuta,           // Colonna B: Data
         nomeDaUsare,                         // Colonna C: Nome pagante / pseudonimo
         mappaCausale.causale,                // Colonna D: Causale
-        mappaCausale.numeroLezioni           // Colonna E: Numero lezioni
+        mappaCausale.numeroLezioni,          // Colonna E: Numero lezioni
+        '',                                  // Colonna F: vuota
+        '',                                  // Colonna G: vuota
+        '',                                  // Colonna H: vuota
+        importoBonifico,                     // Colonna I: Bonifico/POS/PayPal
+        importoContantiConRicevuta,          // Colonna J: Contanti con ricevuta
+        importoContantiSenzaRicevuta         // Colonna K: Contanti senza ricevuta
       ]];
 
       await this.sheets.spreadsheets.values.update({
