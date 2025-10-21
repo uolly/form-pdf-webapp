@@ -124,7 +124,7 @@ async salvaRicevuta(ricevutaData) {
   }
 
   async salvaNellaCassa(ricevutaData) {
-    // Trova la prima riga libera nella colonna C del foglio Cassa
+    // Trova la prima riga libera nella colonna C del foglio Cassa (partendo dalla riga 4)
     const colonnaC = await this.sheets.spreadsheets.values.get({
       spreadsheetId: this.spreadsheetId,
       range: 'Cassa!C:C'
@@ -132,16 +132,19 @@ async salvaRicevuta(ricevutaData) {
 
     let primaRigaLibera = 4;
     if (colonnaC.data.values) {
-      // Trova la prima cella vuota nella colonna C
-      for (let i = 0; i < colonnaC.data.values.length; i++) {
+      // Trova la prima cella vuota nella colonna C a partire dalla riga 4
+      for (let i = 3; i < colonnaC.data.values.length; i++) { // i=3 corrisponde alla riga 4
         if (!colonnaC.data.values[i][0] || colonnaC.data.values[i][0] === '') {
           primaRigaLibera = i + 1;
           break;
         }
       }
-      // Se tutte le celle sono piene, aggiungi alla fine
-      if (primaRigaLibera === 1) {
-        primaRigaLibera = colonnaC.data.values.length + 1;
+      // Se tutte le celle dalla riga 4 in poi sono piene, aggiungi alla fine
+      if (primaRigaLibera === 4 && colonnaC.data.values.length >= 4) {
+        // Controlla se la riga 4 è già piena
+        if (colonnaC.data.values[3] && colonnaC.data.values[3][0]) {
+          primaRigaLibera = colonnaC.data.values.length + 1;
+        }
       }
     }
 
