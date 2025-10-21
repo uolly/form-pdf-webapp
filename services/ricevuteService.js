@@ -262,9 +262,9 @@ async salvaRicevuta(ricevutaData) {
       });
 
       let primaRigaLibera = 19;
-      if (colonnaC.data.values && colonnaB.data.values.length > 0) {
+      if (colonnaC.data.values && colonnaC.data.values.length > 0) {
         // Trova la prima cella vuota nella colonna B a partire dalla riga 19
-        for (let i = 0; i < colonnaB.data.values.length; i++) {
+        for (let i = 0; i < colonnaC.data.values.length; i++) {
           if (!colonnaC.data.values[i][0] || colonnaC.data.values[i][0] === '') {
             primaRigaLibera = 19 + i;
             break;
