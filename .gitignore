@@ -6,6 +6,10 @@ node_modules/
 .env.local
 .env.*.local
 
+# Firebase credentials (SENSIBILE - NON COMMITTARE)
+config/
+config/*.json
+
 # File di test locali
 test-*.html
 test-*.js

@@ -109,13 +109,13 @@ class EmailService {
   }
 
   // Metodo per iscrizioni - usa SendGrid
-  async sendFormEmail(formData, pdfBuffer, signatureLog = null) {
+  async sendFormEmail(formData, pdfBuffer, signatureLog = null, accountData = null) {
     try {
       console.log('📧 SENDFORMEMAIL chiamato per:', formData.nome, formData.cognome);
 
       const timestamp = Date.now();
       const pdfFileName = `modulo_iscrizione_${formData.cognome}_${formData.nome}_${timestamp}.pdf`;
-      
+
       // 1. EMAIL ALL'AMMINISTRATORE
       const attachments = [
         {
@@ -139,8 +139,8 @@ class EmailService {
         from: `"Agility Club Labora" <${process.env.EMAIL_FROM}>`,
         to: 'laboratrieste@gmail.com',
         cc: 'walter.cleva@gmail.com',
-        subject: `Nuova iscrizione ricevuta - ${formData.nome} ${formData.cognome}`,
-        html: this.generateAdminEmailContent(formData, signatureLog),
+        subject: `Nuova iscrizione ricevuta - ${formData.nome} ${formData.cognome}${accountData ? ' (con account app)' : ''}`,
+        html: this.generateAdminEmailContent(formData, signatureLog, accountData),
         attachments: attachments
       };
 
@@ -149,7 +149,7 @@ class EmailService {
         from: `"Agility Club Labora" <${process.env.EMAIL_FROM}>`,
         to: formData.email,
         subject: 'Conferma iscrizione - Agility Club Labora',
-        html: this.generateUserEmailContent(formData, signatureLog),
+        html: this.generateUserEmailContent(formData, signatureLog, accountData),
         attachments: [
           {
             filename: pdfFileName,
@@ -297,7 +297,7 @@ const adminMailOptions = {
   }
 
   // Email utente ottimizzata per non finire nello spam
-  generateUserEmailContent(formData, signatureLog = null) {
+  generateUserEmailContent(formData, signatureLog = null, accountData = null) {
     const signatureInfo = signatureLog ? `
       <div class="info-box" style="background-color: #e8f5e9; border-left-color: #4caf50;">
         <h3 style="margin-top: 0; color: #2e7d32;">✓ Documento firmato digitalmente</h3>
@@ -305,6 +305,46 @@ const adminMailOptions = {
         <p><strong>ID Documento:</strong> ${signatureLog.documentId}</p>
         <p><strong>Hash documento:</strong> <code style="font-size: 11px; word-break: break-all;">${signatureLog.documentHash.substring(0, 32)}...</code></p>
         <p style="margin-bottom: 0;"><small>Il documento allegato contiene la tua firma elettronica e ha pieno valore probatorio ai sensi del Regolamento eIDAS (UE) 910/2014.</small></p>
+      </div>
+    ` : '';
+
+    const accountInfo = accountData ? `
+      <div class="info-box" style="background-color: ${accountData.alreadyExists ? '#fff3cd' : '#e3f2fd'}; border-left-color: ${accountData.alreadyExists ? '#ffc107' : '#2196f3'};">
+        <h3 style="margin-top: 0; color: ${accountData.alreadyExists ? '#856404' : '#1565c0'};">${accountData.alreadyExists ? '📱 Account App Esistente' : '📱 Account App Creato'}</h3>
+        ${accountData.alreadyExists ?
+          '<p>Hai già un account per l\'app Agility Club Labora! Abbiamo aggiornato i tuoi dati del profilo.</p>' :
+          '<p>Il tuo account per l\'app Agility Club Labora è stato creato con successo!</p>'
+        }
+        <div style="background-color: #ffffff; padding: 15px; border-radius: 8px; margin: 15px 0;">
+          <p style="margin: 5px 0;"><strong>Email:</strong> ${accountData.email}</p>
+          <p style="margin: 5px 0;"><strong>Metodo accesso:</strong> ${accountData.authMethod === 'google' ? 'Google Sign-In' : 'Email e Password'}</p>
+          ${accountData.authMethod === 'password' && !accountData.alreadyExists ?
+            '<p style="margin: 5px 0; color: #666;"><small>Usa la password che hai creato durante la registrazione</small></p>' :
+            accountData.alreadyExists ?
+              '<p style="margin: 5px 0; color: #856404;"><small>⚠️ Usa la password del tuo account esistente per accedere</small></p>' :
+              ''
+          }
+        </div>
+        <p><strong>📲 Scarica l'app:</strong></p>
+        <ul style="list-style: none; padding-left: 0;">
+          <li style="margin: 10px 0;">
+            <a href="https://play.google.com/store" style="display: inline-block; background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+              📱 Android - Google Play
+            </a>
+          </li>
+          <li style="margin: 10px 0;">
+            <a href="https://apps.apple.com" style="display: inline-block; background-color: #0073aa; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+              🍎 iOS - App Store
+            </a>
+          </li>
+        </ul>
+        <p style="margin-top: 15px;"><strong>Cosa puoi fare con l'app:</strong></p>
+        <ul>
+          <li>📅 Prenotare lezioni e allenamenti</li>
+          <li>🐕 Gestire i tuoi binomi (cane-conduttore)</li>
+          <li>📊 Monitorare i progressi</li>
+          <li>💬 Comunicare con gli istruttori</li>
+        </ul>
       </div>
     ` : '';
 
@@ -402,6 +442,8 @@ const adminMailOptions = {
 
             ${signatureInfo}
 
+            ${accountInfo}
+
            <div class="important">
               <h3>Documenti richiesti per completare l'iscrizione</h3>
               ${signatureLog ? `
@@ -446,7 +488,17 @@ const adminMailOptions = {
   }
 
   // Email admin ottimizzata
-  generateAdminEmailContent(formData, signatureLog = null) {
+  generateAdminEmailContent(formData, signatureLog = null, accountData = null) {
+    const accountSection = accountData ? `
+      <tr>
+        <td colspan="2" style="padding: 15px; background-color: #e3f2fd; border-left: 4px solid #2196f3;">
+          <h3 style="margin: 0 0 10px 0; color: #1565c0;">📱 Account App Creato</h3>
+          <p style="margin: 5px 0;"><strong>UID:</strong> ${accountData.uid}</p>
+          <p style="margin: 5px 0;"><strong>Email:</strong> ${accountData.email}</p>
+          <p style="margin: 5px 0;"><strong>Metodo:</strong> ${accountData.authMethod === 'google' ? 'Google Sign-In' : 'Email e Password'}</p>
+        </td>
+      </tr>
+    ` : '';
     const signatureSection = signatureLog ? `
       <div class="section">
         <h3>🔐 Firma Elettronica</h3>
@@ -668,6 +720,26 @@ const adminMailOptions = {
                 <div class="field">
                   <span class="field-label">Conduttore:</span>
                   <span class="field-value">${formData.conduttoreCane2 || 'Non specificato'}</span>
+                </div>
+              </div>
+            </div>
+            ` : ''}
+
+            ${accountData ? `
+            <div class="section">
+              <h3>📱 Account App</h3>
+              <div style="background-color: #e3f2fd; padding: 15px; border-left: 3px solid #2196f3;">
+                <div class="field">
+                  <span class="field-label">UID Firebase:</span>
+                  <span class="field-value">${accountData.uid}</span>
+                </div>
+                <div class="field">
+                  <span class="field-label">Email:</span>
+                  <span class="field-value">${accountData.email}</span>
+                </div>
+                <div class="field">
+                  <span class="field-label">Metodo accesso:</span>
+                  <span class="field-value">${accountData.authMethod === 'google' ? '🔐 Google Sign-In' : '📧 Email e Password'}</span>
                 </div>
               </div>
             </div>

@@ -7,6 +7,7 @@ const emailService = require('../services/emailService');
 const signatureLogService = require('../services/signatureLogService');
 const verificationService = require('../services/verificationService');
 const documentArchiveService = require('../services/documentArchiveService');
+const firebaseAuthService = require('../services/firebaseAuthService');
 
 // Validation middleware aggiornata
 const validateForm = [
@@ -96,6 +97,44 @@ router.post('/submit', validateForm, async (req, res) => {
       console.log('⚠️ Nessuna firma digitale - documento da firmare a mano');
     }
 
+    // ========================================
+    // CREAZIONE ACCOUNT APP (se richiesto)
+    // ========================================
+    let accountCreated = false;
+    let accountData = null;
+
+    console.log('🔍 Debug creazione account:', {
+      createAppAccount: formData.createAppAccount,
+      authMethod: formData.authMethod,
+      hasGoogleToken: !!formData.googleIdToken,
+      hasPassword: !!formData.appPassword
+    });
+
+    if (formData.createAppAccount && (formData.authMethod === 'google' || formData.authMethod === 'password')) {
+      console.log(`📱 Creazione account app con metodo: ${formData.authMethod}`);
+
+      try {
+        accountData = await firebaseAuthService.createAccount({
+          authMethod: formData.authMethod,
+          googleIdToken: formData.googleIdToken,
+          password: formData.appPassword,
+          formData: formData
+        });
+
+        accountCreated = true;
+        console.log(`✓ Account creato: ${accountData.email} (UID: ${accountData.uid})`);
+
+      } catch (error) {
+        console.error('❌ Errore creazione account:', error.message);
+        console.error('Stack trace:', error.stack);
+        // Non bloccare l'iscrizione se la creazione account fallisce
+        accountCreated = false;
+        accountData = { error: error.message };
+      }
+    } else {
+      console.log('⏭️ Creazione account saltata');
+    }
+
     // 4. Controlla se double opt-in è abilitato
     const doubleOptInEnabled = process.env.ENABLE_DOUBLE_OPTIN !== 'false'; // Default: true
 
@@ -155,13 +194,21 @@ router.post('/submit', validateForm, async (req, res) => {
         success: true,
         message: 'Iscrizione ricevuta. Controlla la tua email per confermare.',
         requiresVerification: true,
+        accountCreated: accountCreated,
         data: {
           documentId: signatureLog ? signatureLog.documentId : 'N/A',
           documentHash: signatureLog ? signatureLog.documentHash : 'N/A',
           signatureTimestamp: signatureLog ? signatureLog.signatureTimestamp : null,
           hasDigitalSignature: hasSignature,
           verificationSent: true,
-          verificationEmail: formData.email
+          verificationEmail: formData.email,
+          ...(accountCreated && {
+            account: {
+              uid: accountData.uid,
+              email: accountData.email,
+              authMethod: accountData.authMethod
+            }
+          })
         }
       });
 
@@ -169,8 +216,8 @@ router.post('/submit', validateForm, async (req, res) => {
       // MODALITÀ INVIO IMMEDIATO (senza double opt-in)
       console.log('📧 Double opt-in disabilitato - invio immediato email con PDF');
 
-      // Invia email immediatamente (con PDF e signature log)
-      const emailResult = await emailService.sendFormEmail(formData, pdfBuffer, signatureLog);
+      // Invia email immediatamente (con PDF, signature log e account data)
+      const emailResult = await emailService.sendFormEmail(formData, pdfBuffer, signatureLog, accountCreated ? accountData : null);
       console.log('✓ Email inviate agli amministratori e utente');
 
       // Salva su Google Sheets con status VERIFIED
@@ -206,13 +253,21 @@ router.post('/submit', validateForm, async (req, res) => {
         success: true,
         message: 'Iscrizione completata con successo. Riceverai una email di conferma.',
         requiresVerification: false,
+        accountCreated: accountCreated,
         data: {
           documentId: signatureLog ? signatureLog.documentId : 'N/A',
           documentHash: signatureLog ? signatureLog.documentHash : 'N/A',
           signatureTimestamp: signatureLog ? signatureLog.signatureTimestamp : null,
           hasDigitalSignature: hasSignature,
           emailSent: true,
-          adminEmails: emailResult.accepted
+          adminEmails: emailResult.accepted,
+          ...(accountCreated && {
+            account: {
+              uid: accountData.uid,
+              email: accountData.email,
+              authMethod: accountData.authMethod
+            }
+          })
         }
       });
     }
