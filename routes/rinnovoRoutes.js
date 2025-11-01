@@ -102,7 +102,10 @@ router.post('/submit', validateRinnovo, async (req, res) => {
     const rinnovoData = req.body;
 
     // Cattura metadati per firma elettronica
-    const ipAddress = req.ip || req.connection.remoteAddress;
+    const ipAddress = req.headers['x-forwarded-for'] ||
+                      req.socket.remoteAddress ||
+                      req.ip ||
+                      'unknown';
     const userAgent = req.get('user-agent');
 
     console.log('📝 Elaborazione rinnovo iscrizione...');

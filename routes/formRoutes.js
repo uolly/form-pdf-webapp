@@ -68,7 +68,10 @@ router.post('/submit', validateForm, async (req, res) => {
     const formData = req.body;
 
     // Cattura metadati per firma elettronica (GDPR compliant)
-    const ipAddress = req.ip || req.connection.remoteAddress;
+    const ipAddress = req.headers['x-forwarded-for'] ||
+                      req.socket.remoteAddress ||
+                      req.ip ||
+                      'unknown';
     const userAgent = req.get('user-agent');
 
     console.log('📝 Elaborazione form con firma elettronica...');
