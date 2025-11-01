@@ -14,7 +14,7 @@ const validateForm = [
   // Dati personali - tutti obbligatori
   body('nome').notEmpty().trim().escape().withMessage('Nome obbligatorio'),
   body('cognome').notEmpty().trim().escape().withMessage('Cognome obbligatorio'),
-  body('email').isEmail().normalizeEmail().withMessage('Email non valida'),
+  body('email').isEmail().withMessage('Email non valida'), // Rimosso normalizeEmail() per mantenere email originale
   body('natoA').notEmpty().trim().escape().withMessage('Luogo di nascita obbligatorio'),
   body('natoIl').notEmpty().isISO8601().withMessage('Data di nascita non valida'),
   body('residenza').notEmpty().trim().escape().withMessage('Residenza obbligatoria'),

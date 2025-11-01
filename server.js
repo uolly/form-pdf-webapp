@@ -33,6 +33,7 @@ console.log('===================================');
 
 const formRoutes = require('./routes/formRoutes');
 const ricevuteRoutes = require('./routes/ricevuteRoutes');
+const rinnovoRoutes = require('./routes/rinnovoRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -68,16 +69,17 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/form', formRoutes);
-
-// Aggiungi dopo le altre routes
-
 app.use('/api/ricevute', ricevuteRoutes);
+app.use('/api/rinnovo', rinnovoRoutes);
 
-// Serve static test form (solo in development)
+// Serve static test forms (solo in development)
 if (process.env.NODE_ENV !== 'production') {
   app.get('/test-form', (req, res) => {
     res.sendFile(__dirname + '/test-iscrizione-form.html');
-    //res.sendFile(__dirname + '/test-vecchia-iscrizione-form.html');
+  });
+
+  app.get('/test-rinnovo', (req, res) => {
+    res.sendFile(__dirname + '/test-rinnovo-form.html');
   });
 }
 

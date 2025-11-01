@@ -41,7 +41,8 @@ class DocumentArchiveService {
       pdfBuffer,
       formData,
       signatureLog,
-      verificationData
+      verificationData,
+      documentType = 'iscrizione' // Default: iscrizione, può essere 'rinnovo'
     } = params;
 
     try {
@@ -61,7 +62,7 @@ class DocumentArchiveService {
       const metadata = {
         // Identificazione
         documentId,
-        documentType: 'modulo_iscrizione',
+        documentType: documentType === 'rinnovo' ? 'modulo_rinnovo' : 'modulo_iscrizione',
         version: '1.0',
         hasDigitalSignature: !!signatureLog,
 

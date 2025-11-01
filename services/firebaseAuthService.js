@@ -253,7 +253,8 @@ async function createAccount({ authMethod, googleIdToken, password, formData }) 
       city: formData.comune,
       privacy: formData.consensoPrivacy,
       social: formData.consensoSocial,
-      newsletter: formData.consensoNewsletter
+      newsletter: formData.consensoNewsletter,
+      regolamento: formData.consensoRegolamento || false
     });
 
     return {
@@ -272,9 +273,54 @@ async function createAccount({ authMethod, googleIdToken, password, formData }) 
   }
 }
 
+/**
+ * Aggiorna i consensi di un handler esistente
+ * @param {string} email - Email del handler
+ * @param {Object} consensi - Oggetto con i consensi da aggiornare
+ * @returns {Promise<Object>}
+ */
+async function updateHandlerConsents(email, consensi) {
+  try {
+    initializeFirebaseAdmin(); // Assicurati che Firebase sia inizializzato
+    const db = admin.firestore();
+
+    // Cerca l'handler per email
+    const handlersRef = db.collection('handlers');
+    const snapshot = await handlersRef.where('email', '==', email).limit(1).get();
+
+    if (snapshot.empty) {
+      console.log(`Handler con email ${email} non trovato in Firebase`);
+      return { success: false, message: 'Handler non trovato' };
+    }
+
+    const handlerDoc = snapshot.docs[0];
+
+    // Aggiorna solo i consensi
+    await handlerDoc.ref.update({
+      privacy: consensi.privacy || false,
+      social: consensi.social || false,
+      newsletter: consensi.newsletter || false,
+      regolamento: consensi.regolamento || false,
+      updatedAt: new Date().toISOString()
+    });
+
+    console.log(`✓ Consensi aggiornati per ${email}`);
+
+    return {
+      success: true,
+      handlerId: handlerDoc.id
+    };
+
+  } catch (error) {
+    console.error('Errore aggiornamento consensi:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   verifyGoogleToken,
   createUserWithEmailPassword,
   createHandlerDocument,
-  createAccount
+  createAccount,
+  updateHandlerConsents
 };

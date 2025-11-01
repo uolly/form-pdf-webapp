@@ -327,6 +327,196 @@ class PdfService {
   }
   
   // Metodo alternativo per PDF senza campi form
+  /**
+   * Compila il PDF per il rinnovo iscrizione
+   * @param {Object} rinnovoData - Dati del rinnovo
+   * @returns {Buffer} - Buffer del PDF compilato
+   */
+  async fillRinnovoPdf(rinnovoData) {
+    try {
+      // Pulisci i dati
+      const cleanData = this.cleanFormData(rinnovoData);
+
+      console.log('📄 Compilazione PDF rinnovo per:', cleanData.nome, cleanData.cognome);
+      console.log('Firma elettronica presente:', !!cleanData.signatureDataUrl);
+
+      // Carica il PDF template rinnovo
+      const pdfPath = path.join(__dirname, '../templates/rinnovo-iscrizione.pdf');
+      const existingPdfBytes = await fs.readFile(pdfPath);
+
+      // Carica il documento PDF
+      const pdfDoc = await PDFDocument.load(existingPdfBytes);
+
+      // Ottieni il form del PDF
+      const form = pdfDoc.getForm();
+
+      // Funzione helper per riempire campo se esiste
+      const fillFieldIfExists = (fieldName, value) => {
+        try {
+          if (value !== undefined && value !== null && value !== '') {
+            const field = form.getTextField(fieldName);
+            field.setText(String(value));
+            console.log(`✓ Campo '${fieldName}' compilato`);
+          }
+        } catch (e) {
+          console.log(`Campo '${fieldName}' non trovato nel PDF`);
+        }
+      };
+
+      // Funzione helper per checkbox
+      const checkFieldIfExists = (fieldName, value) => {
+        try {
+          if (value === true || value === 'true' || value === 'Checked') {
+            const field = form.getCheckBox(fieldName);
+            field.check();
+            console.log(`✓ Checkbox '${fieldName}' spuntata`);
+          }
+        } catch (e) {
+          console.log(`Checkbox ${fieldName} non trovata nel PDF`);
+        }
+      };
+
+      // Compila i campi del form rinnovo
+      fillFieldIfExists('nome', cleanData.nome);
+      fillFieldIfExists('cognome', cleanData.cognome);
+      fillFieldIfExists('codiceFiscale', cleanData.codiceFiscale);
+      fillFieldIfExists('email', cleanData.email);
+      fillFieldIfExists('comune', 'Trieste'); // Valore fisso per tutti i rinnovi
+
+      // Consensi
+      checkFieldIfExists('consensoPrivacy', cleanData.consensoPrivacy);
+      checkFieldIfExists('consensoSocial', cleanData.consensoSocial);
+      checkFieldIfExists('consensoRegolamento', cleanData.consensoRegolamento);
+      checkFieldIfExists('consensoNewsletter', cleanData.consensoNewsletter);
+
+      // Privacy footer (se ci sono campi separati come nel form iscrizione)
+      fillFieldIfExists('nome_privacy', cleanData.nome);
+      fillFieldIfExists('cognome_privacy', cleanData.cognome);
+      fillFieldIfExists('dataCompilazione_privacy', new Date().toLocaleDateString('it-IT'));
+
+      // =============================================
+      // GESTIONE FIRMA ELETTRONICA (come nel form iscrizione)
+      // =============================================
+      if (cleanData.signatureDataUrl && cleanData.signatureDataUrl !== 'null') {
+        console.log('📝 Aggiunta firma elettronica al PDF rinnovo...');
+
+        // Converti la firma da base64 a buffer
+        const signatureBase64 = cleanData.signatureDataUrl.replace(/^data:image\/\w+;base64,/, '');
+        const signatureBuffer = Buffer.from(signatureBase64, 'base64');
+
+        // Embed l'immagine della firma nel PDF
+        const signatureImage = await pdfDoc.embedPng(signatureBuffer);
+        // Dimensioni della firma (proporzionali)
+       let signatureWidth = 270;
+       let signatureHeight = 40;
+
+        // Ottieni le pagine del PDF
+        const pages = pdfDoc.getPages();
+        const firstPage = pages[0];
+        const secondPage = pages[1];
+        const thirdPage = pages[2];
+
+        // LE POSIZIONI DELLE FIRME SONO LE STESSE DEL MODULO DI ISCRIZIONE
+        // Prima pagina - firma principale (in basso)
+        
+        const { width: pageWidth, height: pageHeight } = firstPage.getSize();
+        let xPosition = pageWidth - signatureWidth - 75; // 50px dal bordo destro
+        let yPosition = 430; 
+
+       
+
+          
+        // Disegna la firma sulla pagina
+          firstPage.drawImage(signatureImage, {
+            x: xPosition,
+            y: yPosition,
+            width: signatureWidth,
+            height: signatureHeight,
+            opacity: 1
+          });
+
+          // Aggiungi etichetta "Firma:" sopra la firma
+          const timestamp = new Date().toLocaleString('it-IT');
+          const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+          firstPage.drawText(`Firma digitale  apposta il: ${timestamp}`, {
+            x: xPosition,
+            y: yPosition + signatureHeight + 5,
+            size: 8,
+            font: helveticaFont,
+            color: rgb(0.3, 0.3, 0.3)
+          });
+
+          
+//seconda pagina
+          
+          xPosition = pageWidth - signatureWidth; // 50px dal bordo destro
+          yPosition = 135; 
+          signatureWidth = 170;
+          signatureHeight = 20;
+
+          // Disegna la firma sulla pagina
+          secondPage.drawImage(signatureImage, {
+            x: xPosition,
+            y: yPosition,
+            width: signatureWidth,
+            height: signatureHeight,
+            opacity: 1
+          });
+
+          // Aggiungi etichetta "Firma:" sopra la firma
+         
+          secondPage.drawText(`Firma digitale apposta il: ${timestamp}`, {
+            x: xPosition,
+            y: yPosition + signatureHeight + 5,
+            size: 8,
+            font: helveticaFont,
+            color: rgb(0.3, 0.3, 0.3)
+          });
+
+         //terza pagina
+
+          xPosition = pageWidth - signatureWidth - 95; // 50px dal bordo destro
+          yPosition = 60; 
+          signatureWidth = 170;
+          signatureHeight = 40;
+
+          // Disegna la firma sulla pagina
+          thirdPage.drawImage(signatureImage, {
+            x: xPosition,
+            y: yPosition,
+            width: signatureWidth,
+            height: signatureHeight,
+            opacity: 1
+          });
+
+          // Aggiungi etichetta "Firma:" sopra la firma
+         
+          thirdPage.drawText(`Firma digitale apposta il: ${timestamp}`, {
+            x: xPosition,
+            y: yPosition + signatureHeight + 5,
+            size: 8,
+            font: helveticaFont,
+            color: rgb(0.3, 0.3, 0.3)
+          });
+      } else {
+        console.log('⚠️ Nessuna firma elettronica - documento da firmare a mano');
+      }
+
+      // Flatten form (rendi i campi non modificabili)
+      form.flatten();
+
+      // Salva il PDF
+      const pdfBytes = await pdfDoc.save();
+      console.log('✓ PDF rinnovo generato:', pdfBytes.length, 'bytes');
+
+      return Buffer.from(pdfBytes);
+
+    } catch (error) {
+      console.error('Errore compilazione PDF rinnovo:', error);
+      throw error;
+    }
+  }
+
   async fillPdfWithText(formData) {
     try {
       // PULISCI I DATI ANCHE QUI

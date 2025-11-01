@@ -915,6 +915,431 @@ const adminMailOptions = {
     const date = new Date(dateString);
     return date.toLocaleDateString('it-IT');
   }
+
+  // ============================================
+  // EMAIL PER RINNOVI ISCRIZIONE
+  // ============================================
+
+  /**
+   * Invia email per rinnovo iscrizione
+   */
+  async sendRinnovoEmails(rinnovoData, pdfBuffer = null, signatureLog = null) {
+    try {
+      console.log('📧 SENDRINNOVOEMAILS chiamato per:', rinnovoData.nome, rinnovoData.cognome);
+
+      // Controllo modalità test
+      if (process.env.DISABLE_EMAIL_SENDING === 'true') {
+        console.log('⚠️ MODALITÀ TEST: Email rinnovo NON inviata (DISABLE_EMAIL_SENDING=true)');
+        console.log('Dettagli email che sarebbe stata inviata:');
+        console.log('- A:', rinnovoData.email);
+        console.log('- Admin: laboratrieste@gmail.com');
+        console.log('- Oggetto: Conferma rinnovo iscrizione');
+        console.log('- PDF allegato:', pdfBuffer ? 'Sì' : 'No');
+        console.log('- Firma digitale:', signatureLog ? 'Sì' : 'No');
+
+        return {
+          success: true,
+          method: 'test-mode',
+          message: 'Email simulate (non inviate) - modalità test attiva'
+        };
+      }
+
+      const timestamp = Date.now();
+      const attachments = [];
+
+      // Aggiungi PDF se disponibile
+      if (pdfBuffer) {
+        const pdfFileName = `rinnovo_iscrizione_${rinnovoData.cognome}_${rinnovoData.nome}_${timestamp}.pdf`;
+        attachments.push({
+          filename: pdfFileName,
+          content: pdfBuffer,
+          contentType: 'application/pdf'
+        });
+      }
+
+      // Aggiungi signature log JSON se presente
+      if (signatureLog) {
+        const logFileName = `signature_log_rinnovo_${rinnovoData.cognome}_${rinnovoData.nome}_${timestamp}.json`;
+        attachments.push({
+          filename: logFileName,
+          content: Buffer.from(JSON.stringify(signatureLog, null, 2), 'utf-8'),
+          contentType: 'application/json'
+        });
+      }
+
+      // 1. EMAIL ALL'AMMINISTRATORE
+      const adminMailOptions = {
+        from: `"Agility Club Labora" <${process.env.EMAIL_FROM}>`,
+        to: 'laboratrieste@gmail.com',
+        cc: 'walter.cleva@gmail.com',
+        subject: `Rinnovo iscrizione - ${rinnovoData.nome} ${rinnovoData.cognome}`,
+        html: this.generateRinnovoAdminEmailContent(rinnovoData, signatureLog),
+        attachments: attachments
+      };
+
+      // 2. EMAIL ALL'UTENTE
+      const userMailOptions = {
+        from: `"Agility Club Labora" <${process.env.EMAIL_FROM}>`,
+        to: rinnovoData.email,
+        subject: `Conferma rinnovo iscrizione ${new Date().getFullYear()} - Agility Club Labora`,
+        html: this.generateRinnovoUserEmailContent(rinnovoData, signatureLog),
+        attachments: pdfBuffer ? [{
+          filename: `rinnovo_iscrizione_${rinnovoData.cognome}_${rinnovoData.nome}_${timestamp}.pdf`,
+          content: pdfBuffer,
+          contentType: 'application/pdf'
+        }] : []
+      };
+
+      // Invia entrambe le email
+      console.log('📧 Invio email amministratore (rinnovo)...');
+      const adminResult = await this.sendEmail(adminMailOptions);
+
+      console.log('📧 Invio email conferma utente (rinnovo)...');
+      const userResult = await this.sendEmail(userMailOptions);
+
+      return {
+        success: true,
+        admin: adminResult,
+        user: userResult,
+        accepted: [
+          ...(adminResult.accepted || []),
+          ...(userResult.accepted || [])
+        ],
+        adminMessageId: adminResult.messageId,
+        userMessageId: userResult.messageId
+      };
+
+    } catch (error) {
+      console.error('💥 Errore invio email rinnovo:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Genera HTML email per utente (rinnovo)
+   */
+  generateRinnovoUserEmailContent(rinnovoData, signatureLog = null) {
+    const signatureInfo = signatureLog ? `
+      <div class="info-box" style="background-color: #e8f5e9; border-left-color: #4caf50;">
+        <h3 style="margin-top: 0; color: #2e7d32;">✓ Documento firmato digitalmente</h3>
+        <p><strong>Data e ora firma:</strong> ${new Date(signatureLog.signatureTimestamp).toLocaleString('it-IT')}</p>
+        <p><strong>ID Documento:</strong> ${signatureLog.documentId}</p>
+        <p><strong>Hash documento:</strong> <code style="font-size: 11px; word-break: break-all;">${signatureLog.documentHash.substring(0, 32)}...</code></p>
+        <p style="margin-bottom: 0;"><small>Il documento allegato contiene la tua firma elettronica e ha pieno valore probatorio ai sensi del Regolamento eIDAS (UE) 910/2014.</small></p>
+      </div>
+    ` : '';
+
+    const annoCorrente = new Date().getFullYear();
+
+    return `
+      <!DOCTYPE html>
+      <html lang="it">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Conferma rinnovo iscrizione</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+          }
+          .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border: 1px solid #dddddd;
+          }
+          .header {
+            background-color: #28a745;
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+          }
+          .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: normal;
+          }
+          .content {
+            padding: 30px 20px;
+          }
+          .welcome {
+            font-size: 18px;
+            color: #28a745;
+            margin-bottom: 20px;
+            font-weight: bold;
+          }
+          .info-box {
+            background-color: #f0f8ff;
+            padding: 20px;
+            border-left: 4px solid #2c5aa0;
+            margin: 20px 0;
+          }
+          .important {
+            background-color: #fff3cd;
+            padding: 20px;
+            border: 1px solid #ffeaa7;
+            margin: 20px 0;
+          }
+          .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666666;
+            border-top: 1px solid #e9ecef;
+          }
+          .contact-info {
+            background-color: #e3f2fd;
+            padding: 15px;
+            margin: 20px 0;
+            border: 1px solid #bbdefb;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>✓ Rinnovo Iscrizione ${annoCorrente}</h1>
+            <p style="margin: 10px 0 0 0;">Agility Club Labora - A.S.D.</p>
+          </div>
+
+          <div class="content">
+            <p class="welcome">Gentile ${rinnovoData.nome} ${rinnovoData.cognome},</p>
+
+            <p>il tuo rinnovo dell'iscrizione per l'anno <strong>${annoCorrente}</strong> è stato completato con successo!</p>
+
+            <div class="info-box">
+              <p><strong>✓ La tua iscrizione è stata rinnovata</strong> e sei nuovamente socio attivo della nostra associazione.</p>
+              <p style="margin-bottom: 0;"><strong>Anno tesseramento:</strong> ${annoCorrente}</p>
+            </div>
+
+            ${signatureInfo}
+
+            <div class="important">
+              <h3 style="margin-top: 0; color: #856404;">📋 Prossimi passi</h3>
+              ${signatureLog ? `
+                <p><strong>✓ Modulo firmato digitalmente</strong><br>
+                Il tuo modulo è stato firmato elettronicamente e non necessita di essere stampato.</p>
+              ` : `
+                <p><strong>📄 Modulo da firmare</strong><br>
+                Il modulo allegato deve essere <strong>stampato e firmato a mano</strong>, poi consegnato al campo o inviato via email/WhatsApp.</p>
+              `}
+              <p><strong>💶 Pagamento quota annuale: €15,00</strong></p>
+              <p>Per completare il rinnovo, versa la quota di <strong>15 euro</strong>:</p>
+              <ul style="margin: 10px 0 10px 20px; line-height: 1.8;">
+                <li><strong>In contanti al campo</strong> durante gli orari di apertura</li>
+                <li><strong>Bonifico bancario:</strong><br>
+                    IBAN: IT73V0503402200000000003040<br>
+                    Intestatario: A.S.D. AGILITY CLUB LA BORA<br>
+                    Causale: Rinnovo ${annoCorrente} - ${rinnovoData.nome} ${rinnovoData.cognome}
+                </li>
+              </ul>
+              <p style="margin-bottom: 0;"><strong>Ti aspettiamo al campo!</strong></p>
+            </div>
+
+            <div class="contact-info">
+              <h3 style="margin-top: 0; color: #1976d2;">📞 Contatti</h3>
+              <p style="margin: 5px 0;"><strong>Email:</strong> <a href="mailto:laboratrieste@gmail.com" style="color: #2c5aa0;">laboratrieste@gmail.com</a></p>
+              <p style="margin: 5px 0;"><strong>WhatsApp:</strong> <a href="https://wa.me/393500693832" style="color: #25D366;">+39 350 0693832</a></p>
+            </div>
+
+            <p>Per qualsiasi informazione, non esitare a contattarci!</p>
+
+            <p style="margin-top: 30px;">Cordiali saluti,<br>
+            <strong>Lo Staff di Agility Club Labora</strong></p>
+          </div>
+
+          <div class="footer">
+            <p><strong>Agility Club Labora - A.S.D.</strong></p>
+            <p>Email inviata a ${rinnovoData.email} in seguito al rinnovo iscrizione ${annoCorrente}</p>
+            <p>Anno ${annoCorrente} - Tutti i diritti riservati</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  /**
+   * Genera HTML email per admin (rinnovo)
+   */
+  generateRinnovoAdminEmailContent(rinnovoData, signatureLog = null) {
+    const signatureSection = signatureLog ? `
+      <div class="section">
+        <h3>🔐 Firma Elettronica</h3>
+        <div style="background-color: #e8f5e9; padding: 15px; border-left: 3px solid #4caf50;">
+          <div class="field">
+            <span class="field-label">Timestamp firma:</span>
+            <span class="field-value">${new Date(signatureLog.signatureTimestamp).toLocaleString('it-IT')}</span>
+          </div>
+          <div class="field">
+            <span class="field-label">ID Documento:</span>
+            <span class="field-value"><code>${signatureLog.documentId}</code></span>
+          </div>
+          <div class="field">
+            <span class="field-label">Hash documento:</span>
+            <span class="field-value"><code style="font-size: 10px; word-break: break-all;">${signatureLog.documentHash}</code></span>
+          </div>
+          <div class="field">
+            <span class="field-label">IP (anon.):</span>
+            <span class="field-value">${signatureLog.technical.ipAddress}</span>
+          </div>
+        </div>
+      </div>
+    ` : '';
+
+    const annoCorrente = new Date().getFullYear();
+
+    return `
+      <!DOCTYPE html>
+      <html lang="it">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Rinnovo iscrizione</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+          }
+          .container {
+            max-width: 700px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+          }
+          .header {
+            background-color: #28a745;
+            color: white;
+            padding: 20px;
+            text-align: center;
+          }
+          .content {
+            padding: 25px;
+          }
+          .section {
+            margin-bottom: 25px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 20px;
+          }
+          .section:last-child {
+            border-bottom: none;
+          }
+          .section h3 {
+            color: #28a745;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 16px;
+          }
+          .field {
+            margin: 8px 0;
+            display: flex;
+          }
+          .field-label {
+            font-weight: bold;
+            min-width: 140px;
+            color: #555;
+          }
+          .field-value {
+            flex: 1;
+          }
+          .summary {
+            background-color: #d4edda;
+            padding: 15px;
+            border: 1px solid #c3e6cb;
+            margin-bottom: 20px;
+          }
+          .footer {
+            background-color: #f8f9fa;
+            padding: 15px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #e9ecef;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2 style="margin: 0;">Rinnovo Iscrizione Ricevuto</h2>
+            <p style="margin: 10px 0 0 0;">Anno ${annoCorrente}</p>
+          </div>
+
+          <div class="content">
+            <div class="summary">
+              <h3 style="margin-top: 0; color: #155724;">Riepilogo rinnovo</h3>
+              <p><strong>Socio:</strong> ${rinnovoData.nome} ${rinnovoData.cognome}</p>
+              <p><strong>Email:</strong> ${rinnovoData.email}</p>
+              <p><strong>Codice Fiscale:</strong> ${rinnovoData.codiceFiscale}</p>
+              <p style="margin-bottom: 0;"><strong>Data rinnovo:</strong> ${new Date().toLocaleDateString('it-IT')}</p>
+            </div>
+
+            <div class="section">
+              <h3>Consensi</h3>
+              <div class="field">
+                <span class="field-label">Privacy:</span>
+                <span class="field-value">${rinnovoData.consensoPrivacy ? '✓ Accettato' : '✗ Non accettato'}</span>
+              </div>
+              <div class="field">
+                <span class="field-label">Utilizzo social:</span>
+                <span class="field-value">${rinnovoData.consensoSocial ? '✓ Accettato' : '✗ Non accettato'}</span>
+              </div>
+              <div class="field">
+                <span class="field-label">Regolamento:</span>
+                <span class="field-value">${rinnovoData.consensoRegolamento ? '✓ Accettato' : '✗ Non accettato'}</span>
+              </div>
+              <div class="field">
+                <span class="field-label">Newsletter:</span>
+                <span class="field-value">${rinnovoData.consensoNewsletter ? '✓ Accettato' : '✗ Non accettato'}</span>
+              </div>
+            </div>
+
+            ${signatureSection}
+
+            <div class="section">
+              <h3>Stato Modulo</h3>
+              ${signatureLog ? `
+                <p style="color: #28a745;"><strong>✓ Modulo firmato digitalmente</strong> - Non necessita firma cartacea</p>
+              ` : `
+                <p style="color: #ffc107;"><strong>⚠️ Modulo da firmare a mano</strong> - Il socio deve stampare, firmare e consegnare</p>
+              `}
+            </div>
+
+            <div class="section">
+              <h3>Pagamento</h3>
+              <p><strong>Quota annuale: €15,00</strong></p>
+              <p>Il socio deve versare la quota tramite:</p>
+              <ul style="margin: 5px 0 0 20px;">
+                <li>Contanti al campo</li>
+                <li>Bonifico bancario (IBAN: IT73V0503402200000000003040)</li>
+              </ul>
+            </div>
+
+            <div class="section">
+              <h3>Note</h3>
+              <p>Il socio ha completato il rinnovo per l'anno ${annoCorrente}. I dati sono stati salvati nel foglio "Rinnovi".</p>
+              <p style="margin-bottom: 0;">I consensi sono stati aggiornati su Firebase.</p>
+            </div>
+          </div>
+
+          <div class="footer">
+            <p>Email generata automaticamente dal sistema - ${new Date().toLocaleString('it-IT')}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
 }
 
 module.exports = new EmailService();
