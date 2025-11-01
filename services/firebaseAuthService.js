@@ -184,8 +184,13 @@ async function createHandlerDocument(uid, handlerData) {
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
+    // Rimuovi campi undefined (Firestore non li accetta)
+    const cleanedHandlerDoc = Object.fromEntries(
+      Object.entries(handlerDoc).filter(([_, value]) => value !== undefined)
+    );
+
     // Salva in Firestore collection "handlers"
-    await db.collection('handlers').doc(uid).set(handlerDoc, { merge: true });
+    await db.collection('handlers').doc(uid).set(cleanedHandlerDoc, { merge: true });
 
     console.log(`✓ Documento handler creato per UID: ${uid}`);
   } catch (error) {

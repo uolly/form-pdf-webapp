@@ -229,7 +229,7 @@ router.post('/submit', validateRinnovo, async (req, res) => {
 
     // Invia email di conferma
     console.log('📧 Invio email di conferma rinnovo...');
-    await emailService.sendRinnovoEmails(rinnovoData, pdfBuffer, signatureLog);
+    await emailService.sendRinnovoEmails(rinnovoData, pdfBuffer, signatureLog, accountData);
     console.log('✓ Email inviate');
 
     // Risposta al client
