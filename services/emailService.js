@@ -1104,18 +1104,18 @@ const adminMailOptions = {
       <body>
         <div class="container">
           <div class="header">
-            <h1>✓ Rinnovo Iscrizione ${annoCorrente}</h1>
+            <h1>✓ Rinnovo Iscrizione </h1>
             <p style="margin: 10px 0 0 0;">Agility Club Labora - A.S.D.</p>
           </div>
 
           <div class="content">
             <p class="welcome">Gentile ${rinnovoData.nome} ${rinnovoData.cognome},</p>
 
-            <p>il tuo rinnovo dell'iscrizione per l'anno <strong>${annoCorrente}</strong> è stato completato con successo!</p>
+            <p>il tuo rinnovo dell'iscrizione per l'anno corrente è stato completato con successo!</p>
 
             <div class="info-box">
               <p><strong>✓ La tua iscrizione è stata rinnovata</strong> e sei nuovamente socio attivo della nostra associazione.</p>
-              <p style="margin-bottom: 0;"><strong>Anno tesseramento:</strong> ${annoCorrente}</p>
+              
             </div>
 
             ${signatureInfo}
@@ -1136,7 +1136,7 @@ const adminMailOptions = {
                 <li><strong>Bonifico bancario:</strong><br>
                     IBAN: IT73V0503402200000000003040<br>
                     Intestatario: A.S.D. AGILITY CLUB LA BORA<br>
-                    Causale: Rinnovo ${annoCorrente} - ${rinnovoData.nome} ${rinnovoData.cognome}
+                    Causale: Quota associativa - ${rinnovoData.nome} ${rinnovoData.cognome}
                 </li>
               </ul>
               <p style="margin-bottom: 0;"><strong>Ti aspettiamo al campo!</strong></p>
@@ -1156,7 +1156,7 @@ const adminMailOptions = {
 
           <div class="footer">
             <p><strong>Agility Club Labora - A.S.D.</strong></p>
-            <p>Email inviata a ${rinnovoData.email} in seguito al rinnovo iscrizione ${annoCorrente}</p>
+            <p>Email inviata a ${rinnovoData.email} in seguito al rinnovo iscrizione</p>
             <p>Anno ${annoCorrente} - Tutti i diritti riservati</p>
           </div>
         </div>
@@ -1272,7 +1272,7 @@ const adminMailOptions = {
         <div class="container">
           <div class="header">
             <h2 style="margin: 0;">Rinnovo Iscrizione Ricevuto</h2>
-            <p style="margin: 10px 0 0 0;">Anno ${annoCorrente}</p>
+            
           </div>
 
           <div class="content">
