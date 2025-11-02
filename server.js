@@ -94,6 +94,26 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date() });
 });
 
+// Test endpoint per Resend (sempre disponibile in locale)
+app.get('/test-resend', async (req, res) => {
+  try {
+    const emailService = require('./services/emailService');
+    const result = await emailService.testResend();
+    res.json({
+      success: true,
+      message: 'Email di test inviata con Resend!',
+      result: result
+    });
+  } catch (error) {
+    console.error('Errore nel test Resend:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);

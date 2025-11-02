@@ -1,30 +1,30 @@
-const sgMail = require('@sendgrid/mail');
+const { Resend } = require('resend');
 
 class EmailService {
   constructor() {
-    console.log('🔍 EMAILSERVICE CONSTRUCTOR - Inizio debug versione SendGrid');
-    console.log('🔍 SENDGRID_API_KEY presente:', !!process.env.SENDGRID_API_KEY);
-    console.log('🔍 SENDGRID_API_KEY lunghezza:', process.env.SENDGRID_API_KEY?.length || 0);
-    console.log('🔍 Tutte le variabili ENV email:', Object.keys(process.env).filter(key => 
-      key.includes('SENDGRID') || key.includes('SMTP') || key.includes('EMAIL')
+    console.log('🔍 EMAILSERVICE CONSTRUCTOR - Inizio debug versione Resend');
+    console.log('🔍 RESEND_API_KEY presente:', !!process.env.RESEND_API_KEY);
+    console.log('🔍 RESEND_API_KEY lunghezza:', process.env.RESEND_API_KEY?.length || 0);
+    console.log('🔍 Tutte le variabili ENV email:', Object.keys(process.env).filter(key =>
+      key.includes('RESEND') || key.includes('EMAIL')
     ));
 
-    // Configura SendGrid
-    if (process.env.SENDGRID_API_KEY) {
-      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-      this.sendGridEnabled = true;
-      console.log('✅ SendGrid configurato e abilitato');
+    // Configura Resend
+    if (process.env.RESEND_API_KEY) {
+      this.resend = new Resend(process.env.RESEND_API_KEY);
+      this.resendEnabled = true;
+      console.log('✅ Resend configurato e abilitato');
     } else {
-      this.sendGridEnabled = false;
-      console.log('❌ SENDGRID_API_KEY mancante - SendGrid disabilitato');
+      this.resendEnabled = false;
+      console.log('❌ RESEND_API_KEY mancante - Resend disabilitato');
     }
 
-    console.log('🔍 EMAILSERVICE CONSTRUCTOR - sendGridEnabled:', this.sendGridEnabled);
+    console.log('🔍 EMAILSERVICE CONSTRUCTOR - resendEnabled:', this.resendEnabled);
   }
 
-  // Metodo principale per invio email con SendGrid
+  // Metodo principale per invio email con Resend
   async sendEmail(mailOptions) {
-    console.log('📧 SENDEMAIL chiamato - sendGridEnabled:', this.sendGridEnabled);
+    console.log('📧 SENDEMAIL chiamato - resendEnabled:', this.resendEnabled);
 
     // Modalità TEST: simula invio senza inviare realmente
     if (process.env.DISABLE_EMAIL_SENDING === 'true') {
@@ -41,37 +41,23 @@ class EmailService {
       };
     }
 
-    if (!this.sendGridEnabled) {
-      console.log('❌ SendGrid non abilitato, errore!');
-      throw new Error('SendGrid non configurato - controllare SENDGRID_API_KEY');
+    if (!this.resendEnabled) {
+      console.log('❌ Resend non abilitato, errore!');
+      throw new Error('Resend non configurato - controllare RESEND_API_KEY');
     }
 
-    console.log('📧 Usando SendGrid per invio email...');
+    console.log('📧 Usando Resend per invio email...');
 
     try {
+      // Prepara i destinatari (Resend accetta array o string)
+      const to = this.ensureArray(mailOptions.to);
+
+      // Prepara il messaggio per Resend
       const message = {
-        to: this.ensureArray(mailOptions.to),
-        from: {
-          email: this.extractEmail(mailOptions.from),
-          name: this.extractName(mailOptions.from) || 'Agility Club Labora'
-        },
+        from: mailOptions.from || process.env.EMAIL_FROM || 'onboarding@resend.dev',
+        to: to,
         subject: mailOptions.subject,
-        html: mailOptions.html,
-        text: 'Questa email contiene informazioni importanti. Si prega di visualizzare la versione HTML per tutti i dettagli.', // Testo fisso
-
-        
-        // Ottimizzazioni anti-spam
-        tracking_settings: {
-          click_tracking: { enable: false },
-          open_tracking: { enable: false },
-          subscription_tracking: { enable: false }
-        },
-
-        // Headers professionali
-        custom_args: {
-          source: 'agility_club_system',
-          version: '2.0'
-        }
+        html: mailOptions.html
       };
 
       // Aggiungi CC se presente
@@ -82,27 +68,32 @@ class EmailService {
       // Aggiungi allegati se presenti
       if (mailOptions.attachments && mailOptions.attachments.length > 0) {
         message.attachments = mailOptions.attachments.map(att => ({
-          content: att.content.toString('base64'),
+          content: att.content,
           filename: att.filename,
-          type: att.contentType || 'application/octet-stream',
-          disposition: 'attachment'
+          content_type: att.contentType || 'application/octet-stream'
         }));
       }
 
-      console.log('📧 Invio con SendGrid...');
-      const response = await sgMail.send(message);
-      
-      console.log('✅ Email inviata con SendGrid - Status:', response[0].statusCode);
+      console.log('📧 Invio con Resend...', {
+        from: message.from,
+        to: message.to,
+        subject: message.subject,
+        attachments: message.attachments?.length || 0
+      });
+
+      const response = await this.resend.emails.send(message);
+
+      console.log('✅ Email inviata con Resend - ID:', response.data?.id);
       return {
-        method: 'sendgrid',
-        messageId: response[0].headers['x-message-id'] || 'sg-' + Date.now(),
-        accepted: message.to
+        method: 'resend',
+        messageId: response.data?.id || 'resend-' + Date.now(),
+        accepted: to
       };
 
     } catch (error) {
-      console.error('❌ Errore SendGrid:', error.message);
+      console.error('❌ Errore Resend:', error.message);
       if (error.response) {
-        console.error('❌ SendGrid response:', JSON.stringify(error.response.body, null, 2));
+        console.error('❌ Resend response:', JSON.stringify(error.response, null, 2));
       }
       throw error;
     }
@@ -247,15 +238,15 @@ const adminMailOptions = {
   }
 
   // Metodo di test
-  async testSendGridOptimized() {
-    if (!this.sendGridEnabled) {
-      throw new Error('SendGrid non configurato');
+  async testResend() {
+    if (!this.resendEnabled) {
+      throw new Error('Resend non configurato');
     }
 
     const testEmail = {
-      from: process.env.EMAIL_FROM,
+      from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
       to: process.env.EMAIL_TO,
-      subject: 'Test configurazione sistema email - Agility Club Labora',
+      subject: 'Test configurazione sistema email Resend - Agility Club Labora',
       html: `
         <!DOCTYPE html>
         <html lang="it">
@@ -280,8 +271,9 @@ const adminMailOptions = {
               <p>questo messaggio conferma che il sistema SendGrid è attivo e funzionante.</p>
               <div class="success">
                 <h3 style="margin-top: 0; color: #155724;">Sistema Operativo</h3>
-                <p style="margin-bottom: 0;">SendGrid è configurato correttamente e le email vengono inviate senza timeout.</p>
+                <p style="margin-bottom: 0;">Resend è configurato correttamente e le email vengono inviate rapidamente.</p>
               </div>
+              <p><strong>Provider:</strong> Resend</p>
               <p><strong>Data test:</strong> ${new Date().toLocaleDateString('it-IT')}</p>
               <p><strong>Ora test:</strong> ${new Date().toLocaleTimeString('it-IT')}</p>
               <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
