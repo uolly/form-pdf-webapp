@@ -392,16 +392,17 @@ async function sendNotificationEmailToAdmin(handler, file, expiryDate, temporary
         </html>
     `;
 
-    // Invia all'amministrazione
-    const adminEmail = process.env.EMAIL_TO || 'laboratrieste@gmail.com';
+    // Invia all'amministrazione - supporta email multiple separate da virgola
+    const adminEmailsString = process.env.EMAIL_TO || 'laboratrieste@gmail.com';
+    const adminEmailsArray = adminEmailsString.split(',').map(email => email.trim());
 
     await emailService.sendEmail({
-        to: adminEmail,
+        to: adminEmailsArray,
         subject: `Nuovo Certificato Medico - ${handler.firstName} ${handler.lastName}`,
         html: emailHtml
     });
 
-    console.log(`Email di notifica inviata all'amministrazione: ${adminEmail}`);
+    console.log(`Email di notifica inviata all'amministrazione: ${adminEmailsArray.join(', ')}`);
 }
 
 module.exports = router;
