@@ -673,14 +673,6 @@ const adminMailOptions = {
                   <span class="field-label">Data nascita:</span>
                   <span class="field-value">${this.formatDate(formData.dataNascitaCane1) || 'Non specificata'}</span>
                 </div>
-                <div class="field">
-                  <span class="field-label">Proprietario:</span>
-                  <span class="field-value">${formData.proprietarioCane1 || 'Non specificato'}</span>
-                </div>
-                <div class="field">
-                  <span class="field-label">Conduttore:</span>
-                  <span class="field-value">${formData.conduttoreCane1 || 'Non specificato'}</span>
-                </div>
               </div>
             </div>
             ` : ''}
@@ -708,14 +700,6 @@ const adminMailOptions = {
                 <div class="field">
                   <span class="field-label">Data nascita:</span>
                   <span class="field-value">${this.formatDate(formData.dataNascitaCane2) || 'Non specificata'}</span>
-                </div>
-                <div class="field">
-                  <span class="field-label">Proprietario:</span>
-                  <span class="field-value">${formData.proprietarioCane2 || 'Non specificato'}</span>
-                </div>
-                <div class="field">
-                  <span class="field-label">Conduttore:</span>
-                  <span class="field-value">${formData.conduttoreCane2 || 'Non specificato'}</span>
                 </div>
               </div>
             </div>

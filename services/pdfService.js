@@ -160,8 +160,6 @@ class PdfService {
       fillFieldIfExists('altezzaCane1', cleanData.altezzaCane1);
       fillFieldIfExists('microchipCane1', cleanData.microchipCane1);
       fillFieldIfExists('dataNascitaCane1', formatDate(cleanData.dataNascitaCane1));
-      fillFieldIfExists('proprietarioCane1', cleanData.proprietarioCane1);
-      fillFieldIfExists('conduttoreCane1', cleanData.conduttoreCane1);
       
       // Compila i campi del secondo cane (se presente)
       if (cleanData.aggiungiSecondoCane) {
@@ -171,8 +169,6 @@ class PdfService {
         fillFieldIfExists('altezzaCane2', cleanData.altezzaCane2);
         fillFieldIfExists('microchipCane2', cleanData.microchipCane2);
         fillFieldIfExists('dataNascitaCane2', formatDate(cleanData.dataNascitaCane2));
-        fillFieldIfExists('proprietarioCane2', cleanData.proprietarioCane2);
-        fillFieldIfExists('conduttoreCane2', cleanData.conduttoreCane2);
       }
       
       // Gestisci checkbox privacy
