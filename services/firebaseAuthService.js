@@ -25,7 +25,8 @@ function initializeFirebaseAdmin() {
       const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
-        databaseURL: `https://${serviceAccount.project_id}.firebaseio.com`
+        databaseURL: `https://${serviceAccount.project_id}.firebaseio.com`,
+        storageBucket: `${serviceAccount.project_id}.firebasestorage.app`
       });
     }
     // Controlla se esiste il file su Render
@@ -34,7 +35,8 @@ function initializeFirebaseAdmin() {
       const serviceAccount = require(renderSecretPath);
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
-        databaseURL: `https://${serviceAccount.project_id}.firebaseio.com`
+        databaseURL: `https://${serviceAccount.project_id}.firebaseio.com`,
+        storageBucket: `${serviceAccount.project_id}.firebasestorage.app`
       });
     }
     // Controlla se esiste il file locale (sviluppo)
@@ -43,7 +45,8 @@ function initializeFirebaseAdmin() {
       const serviceAccount = require(localKeyPath);
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
-        databaseURL: `https://${serviceAccount.project_id}.firebaseio.com`
+        databaseURL: `https://${serviceAccount.project_id}.firebaseio.com`,
+        storageBucket: `${serviceAccount.project_id}.firebasestorage.app`
       });
     }
     // Fallback: Application Default Credentials (Google Cloud)
@@ -323,6 +326,7 @@ async function updateHandlerConsents(email, consensi) {
 }
 
 module.exports = {
+  initializeFirebaseAdmin,
   verifyGoogleToken,
   createUserWithEmailPassword,
   createHandlerDocument,

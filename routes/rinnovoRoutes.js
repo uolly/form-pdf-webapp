@@ -12,7 +12,7 @@ const documentArchiveService = require('../services/documentArchiveService');
 const validateRinnovo = [
   body('nome').notEmpty().trim().escape().withMessage('Nome obbligatorio'),
   body('cognome').notEmpty().trim().escape().withMessage('Cognome obbligatorio'),
-  body('email').isEmail().withMessage('Email non valida'), // Rimosso normalizeEmail() per mantenere email originale
+  body('email').matches(/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/).withMessage('Email non valida').customSanitizer(value => value.toLowerCase()),
   body('codiceFiscale').notEmpty().isLength({ min: 16, max: 16 }).toUpperCase().withMessage('Codice fiscale non valido'),
   body('consensoPrivacy').isBoolean().equals('true').withMessage('Devi accettare la privacy'),
   body('consensoSocial').optional().isBoolean(),
@@ -65,12 +65,22 @@ router.post('/verifica-socio', [
     }
 
     // Socio trovato e non ha ancora rinnovato
+    // Oscura i dati sensibili per la privacy (GDPR)
+    const obscuredData = {
+      nome: verificaSocio.data.nome,
+      cognome: verificaSocio.data.cognome,
+      email: verificaSocio.data.email, // Email completa per validazione lato client
+      codiceFiscale: verificaSocio.data.codiceFiscale,
+      // Altri dati non vengono inviati al client per privacy
+      telefono: verificaSocio.data.telefono
+    };
+
     res.json({
       success: true,
       message: 'Socio trovato! Puoi procedere con il rinnovo.',
       exists: true,
       alreadyRenewed: false,
-      data: verificaSocio.data
+      data: obscuredData
     });
 
   } catch (error) {
@@ -114,10 +124,19 @@ router.post('/submit', validateRinnovo, async (req, res) => {
 
     // Verifica che il socio esista
     const verificaSocio = await rinnovoService.verificaSocioEsistente(rinnovoData.codiceFiscale);
+
     if (!verificaSocio.exists) {
-      return res.status(400).json({
+      return res.status(404).json({
         success: false,
-        error: 'Codice fiscale non trovato nel database soci'
+        message: 'Socio non trovato. Verifica il codice fiscale inserito.'
+      });
+    }
+
+    // Verifica che l'email di conferma corrisponda (case-insensitive)
+    if (rinnovoData.emailConfirm && verificaSocio.data.email.toLowerCase() !== rinnovoData.emailConfirm.toLowerCase()) {
+      return res.status(403).json({
+        success: false,
+        message: 'L\'email inserita non corrisponde a quella associata al codice fiscale. Verifica e riprova.'
       });
     }
 

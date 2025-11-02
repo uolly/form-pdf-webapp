@@ -34,6 +34,7 @@ console.log('===================================');
 const formRoutes = require('./routes/formRoutes');
 const ricevuteRoutes = require('./routes/ricevuteRoutes');
 const rinnovoRoutes = require('./routes/rinnovoRoutes');
+const certificatiRoutes = require('./routes/certificatiRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -71,6 +72,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/form', formRoutes);
 app.use('/api/ricevute', ricevuteRoutes);
 app.use('/api/rinnovo', rinnovoRoutes);
+app.use('/api/certificati', certificatiRoutes);
 
 // Serve static test forms (solo in development)
 if (process.env.NODE_ENV !== 'production') {
@@ -80,6 +82,10 @@ if (process.env.NODE_ENV !== 'production') {
 
   app.get('/test-rinnovo', (req, res) => {
     res.sendFile(__dirname + '/test-rinnovo-form.html');
+  });
+
+  app.get('/test-certificato', (req, res) => {
+    res.sendFile(__dirname + '/test-certificato-medico.html');
   });
 }
 
