@@ -458,8 +458,11 @@ const adminMailOptions = {
               <p style="margin: 15px 0 5px 0; font-size: 14px;"><em>Nella causale indicare nome e cognome</em></p>
             </div>
             
-            <p>Per qualsiasi informazione, non esiti a contattarci all'indirizzo laboratrieste@gmail.com</p>
-            
+            <div style="background-color: #fff3cd; padding: 15px; border-left: 3px solid #ffc107; margin: 20px 0;">
+              <p style="margin: 5px 0;"><strong>⚠️ Nota:</strong> Questa è una email automatica inviata da un indirizzo non monitorato.</p>
+              <p style="margin: 5px 0;">Per qualsiasi informazione o domanda, scrivi a: <a href="mailto:laboratrieste@gmail.com" style="color: #2c5aa0; font-weight: bold;">laboratrieste@gmail.com</a></p>
+            </div>
+
             <p style="margin-top: 30px;">Cordiali saluti,<br>
             <strong>Lo Staff di Agility Club Labora</strong></p>
           </div>
@@ -805,10 +808,15 @@ const adminMailOptions = {
             </div>
             
             <p>La ricevuta in formato PDF è allegata a questa comunicazione.</p>
-            
+
+            <div style="background-color: #fff3cd; padding: 15px; border-left: 3px solid #ffc107; margin: 20px 0;">
+              <p style="margin: 5px 0;"><strong>⚠️ Nota:</strong> Questa è una email automatica inviata da un indirizzo non monitorato.</p>
+              <p style="margin: 5px 0;">Per qualsiasi informazione, scrivi a: <a href="mailto:laboratrieste@gmail.com" style="color: #2c5aa0; font-weight: bold;">laboratrieste@gmail.com</a></p>
+            </div>
+
             <p>Cordiali saluti,<br><strong>Agility Club Labora</strong></p>
           </div>
-          
+
           <div class="footer">
             <p>Agility Club Labora - Associazione Sportiva Dilettantistica</p>
           </div>
@@ -1158,7 +1166,10 @@ const adminMailOptions = {
               <p style="margin: 5px 0;"><strong>WhatsApp:</strong> <a href="https://wa.me/393500693832" style="color: #25D366;">+39 350 0693832</a></p>
             </div>
 
-            <p>Per qualsiasi informazione, non esitare a contattarci!</p>
+            <div style="background-color: #fff3cd; padding: 15px; border-left: 3px solid #ffc107; margin: 20px 0;">
+              <p style="margin: 5px 0;"><strong>⚠️ Nota:</strong> Questa è una email automatica inviata da un indirizzo non monitorato.</p>
+              <p style="margin: 5px 0;">Per qualsiasi informazione o domanda, scrivi a: <a href="mailto:laboratrieste@gmail.com" style="color: #2c5aa0; font-weight: bold;">laboratrieste@gmail.com</a></p>
+            </div>
 
             <p style="margin-top: 30px;">Cordiali saluti,<br>
             <strong>Lo Staff di Agility Club Labora</strong></p>

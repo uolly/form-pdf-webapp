@@ -195,6 +195,17 @@ router.post('/upload',
             // Elabora l'upload
             const result = await certificatiService.processCertificateUpload(certificateData);
 
+            // Aggiorna la data di scadenza nel Google Sheet "Soci" (colonna AP)
+            try {
+                await certificatiService.updateCertificateExpiryInGoogleSheet(
+                    taxCode,
+                    new Date(expiryDate)
+                );
+            } catch (sheetError) {
+                console.error('Errore aggiornamento Google Sheet (non blocca il processo):', sheetError);
+                // Non bloccare il processo se l'aggiornamento del Google Sheet fallisce
+            }
+
             // Invia email solo se non è disabilitato (ambiente di test)
             const disableEmailSending = process.env.DISABLE_EMAIL_SENDING === 'true';
 
@@ -288,8 +299,12 @@ async function sendConfirmationEmailToHandler(handler, file, expiryDate) {
 
                         <p>Grazie per la collaborazione!</p>
 
+                        <div style="background-color: #fff3cd; padding: 15px; border-left: 3px solid #ffc107; margin: 20px 0;">
+                            <p style="margin: 5px 0;"><strong>⚠️ Nota:</strong> Questa è una email automatica inviata da un indirizzo non monitorato.</p>
+                            <p style="margin: 5px 0;">Per qualsiasi informazione o domanda, scrivi a: <a href="mailto:laboratrieste@gmail.com" style="color: #2c5aa0; font-weight: bold;">laboratrieste@gmail.com</a></p>
+                        </div>
+
                         <div class="footer">
-                            <p>Questa è una email automatica. Per qualsiasi informazione contatta la segreteria.</p>
                             <p><strong>Agility Club LaBora</strong></p>
                         </div>
                     </div>

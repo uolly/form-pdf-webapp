@@ -1,12 +1,23 @@
 const admin = require('firebase-admin');
 const { Timestamp } = require('@google-cloud/firestore');
 const { initializeFirebaseAdmin } = require('./firebaseAuthService');
+const { google } = require('googleapis');
 
 // Inizializza Firebase Admin
 initializeFirebaseAdmin();
 
 const db = admin.firestore();
 const bucket = admin.storage().bucket();
+
+// Inizializza Google Sheets
+const auth = new google.auth.GoogleAuth({
+    credentials: {
+        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
+    },
+    scopes: ['https://www.googleapis.com/auth/spreadsheets']
+});
+const sheets = google.sheets({ version: 'v4', auth });
 
 /**
  * Cerca un handler nel database Firestore tramite codice fiscale
@@ -216,10 +227,76 @@ async function generateTemporaryUrl(filePath) {
     }
 }
 
+/**
+ * Aggiorna la data di scadenza del certificato medico nel Google Sheet "Soci"
+ * Cerca il socio tramite codice fiscale e aggiorna la colonna AP
+ * @param {string} taxCode - Codice fiscale dell'handler
+ * @param {Date} expiryDate - Data di scadenza del certificato
+ * @returns {Promise<boolean>} - True se l'aggiornamento ha avuto successo
+ */
+async function updateCertificateExpiryInGoogleSheet(taxCode, expiryDate) {
+    try {
+        const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
+        const normalizedTaxCode = taxCode.trim().toUpperCase();
+
+        // 1. Leggi tutte le righe del foglio "Soci" dalla colonna A alla AP
+        const response = await sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range: 'Soci!A2:AP' // Dalla riga 2 in poi (escluso header)
+        });
+
+        const rows = response.data.values || [];
+
+        // 2. Cerca la riga con il codice fiscale corrispondente
+        // Il codice fiscale è nella colonna K (indice 10)
+        let rowIndex = -1;
+        for (let i = 0; i < rows.length; i++) {
+            const cf = rows[i][10] ? rows[i][10].toString().trim().toUpperCase() : '';
+            if (cf === normalizedTaxCode) {
+                rowIndex = i + 2; // +2 perché partiamo da riga 2 (header è riga 1)
+                break;
+            }
+        }
+
+        if (rowIndex === -1) {
+            console.log(`⚠️ Socio con CF ${normalizedTaxCode} non trovato nel foglio "Soci"`);
+            return false;
+        }
+
+        // 3. Aggiorna la colonna AP (indice 41, colonna 42) con la data di scadenza
+        // Formatta la data in formato italiano (gg/mm/aaaa)
+        const formattedDate = expiryDate.toLocaleDateString('it-IT', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+
+        const updateRange = `Soci!AP${rowIndex}`;
+        await sheets.spreadsheets.values.update({
+            spreadsheetId,
+            range: updateRange,
+            valueInputOption: 'USER_ENTERED',
+            resource: {
+                values: [[formattedDate]]
+            }
+        });
+
+        console.log(`✅ Scadenza certificato aggiornata nel Google Sheet "Soci" (riga ${rowIndex}, colonna AP): ${formattedDate}`);
+        return true;
+
+    } catch (error) {
+        console.error('❌ Errore nell\'aggiornamento Google Sheet "Soci":', error);
+        // Non lanciare l'errore per non bloccare il processo principale
+        // L'aggiornamento del Google Sheet è secondario rispetto al caricamento del file
+        return false;
+    }
+}
+
 module.exports = {
     findHandlerByTaxCode,
     updateMedicalCertificateExpiry,
     uploadCertificateToStorage,
     processCertificateUpload,
-    generateTemporaryUrl
+    generateTemporaryUrl,
+    updateCertificateExpiryInGoogleSheet
 };
