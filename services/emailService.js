@@ -1147,8 +1147,8 @@ const adminMailOptions = {
                 <p><strong>📄 Modulo da firmare</strong><br>
                 Il modulo allegato deve essere <strong>stampato e firmato a mano</strong>, poi consegnato al campo o inviato via email/WhatsApp.</p>
               `}
-              <p><strong>💶 Pagamento quota annuale: €15,00</strong></p>
-              <p>Per completare il rinnovo, versa la quota di <strong>15 euro</strong>:</p>
+              <p><strong>💶 Pagamento quota annuale</strong></p>
+              <p>Per completare il rinnovo, versa la quota annuale:</p>
               <ul style="margin: 10px 0 10px 20px; line-height: 1.8;">
                 <li><strong>In contanti al campo</strong> durante gli orari di apertura</li>
                 <li><strong>Bonifico bancario:</strong><br>
