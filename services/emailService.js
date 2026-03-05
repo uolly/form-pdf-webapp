@@ -126,10 +126,19 @@ class EmailService {
         });
       }
 
+      const iscrizioniAdminEmailsString = process.env.EMAIL_ISCRIZIONI_ADMIN || process.env.EMAIL_TO;
+      const iscrizioniAdminEmailsArray = (iscrizioniAdminEmailsString || '')
+        .split(',')
+        .map(email => email.trim())
+        .filter(Boolean);
+
+      if (iscrizioniAdminEmailsArray.length === 0) {
+        throw new Error('Destinatari admin iscrizioni non configurati (EMAIL_ISCRIZIONI_ADMIN o EMAIL_TO)');
+      }
+
       const adminMailOptions = {
         from: `"Agility Club Labora" <${process.env.EMAIL_FROM}>`,
-        to: 'laboratrieste@gmail.com',
-        cc: 'walter.cleva@gmail.com',
+        to: iscrizioniAdminEmailsArray,
         subject: `Nuova iscrizione ricevuta - ${formData.nome} ${formData.cognome}${accountData ? ' (con account app)' : ''}`,
         html: this.generateAdminEmailContent(formData, signatureLog, accountData),
         attachments: attachments
@@ -200,13 +209,20 @@ class EmailService {
 
       // 2. EMAIL AGLI AMMINISTRATORI
       const adminEmailsString = process.env.EMAIL_RICEVUTE_ADMIN || process.env.EMAIL_TO;
-const adminEmailsArray = adminEmailsString.split(',').map(email => email.trim());
+      const adminEmailsArray = (adminEmailsString || '')
+        .split(',')
+        .map(email => email.trim())
+        .filter(Boolean);
 
-const adminMailOptions = {
-  from: `"Sistema Amministrativo" <${process.env.EMAIL_FROM}>`,
-  to: adminEmailsArray, // Array invece di stringa
-  subject: `Ricevuta n. ${ricevutaData.numeroRicevuta} - Agility Club Labora`,
-  html: this.generateRicevutaAdminEmail(ricevutaData),
+      if (adminEmailsArray.length === 0) {
+        throw new Error('Destinatari admin ricevute non configurati (EMAIL_RICEVUTE_ADMIN o EMAIL_TO)');
+      }
+
+      const adminMailOptions = {
+        from: `"Sistema Amministrativo" <${process.env.EMAIL_FROM}>`,
+        to: adminEmailsArray,
+        subject: `Ricevuta n. ${ricevutaData.numeroRicevuta} - Agility Club Labora`,
+        html: this.generateRicevutaAdminEmail(ricevutaData),
         attachments: [
           {
             filename: pdfFileName,
@@ -912,7 +928,9 @@ const adminMailOptions = {
         console.log('⚠️ MODALITÀ TEST: Email rinnovo NON inviata (DISABLE_EMAIL_SENDING=true)');
         console.log('Dettagli email che sarebbe stata inviata:');
         console.log('- A:', rinnovoData.email);
-        console.log('- Admin: laboratrieste@gmail.com');
+        const rinnovoAdminEmailsString = process.env.EMAIL_RINNOVO_ADMIN || process.env.EMAIL_TO;
+        const rinnovoAdminEmailsArray = (rinnovoAdminEmailsString || '').split(',').map(email => email.trim()).filter(Boolean);
+        console.log('- Admin:', rinnovoAdminEmailsArray.join(', ') || '(non configurato)');
         console.log('- Oggetto: Conferma rinnovo iscrizione');
         console.log('- PDF allegato:', pdfBuffer ? 'Sì' : 'No');
         console.log('- Firma digitale:', signatureLog ? 'Sì' : 'No');
@@ -947,11 +965,20 @@ const adminMailOptions = {
         });
       }
 
+      const rinnovoAdminEmailsString = process.env.EMAIL_RINNOVO_ADMIN || process.env.EMAIL_TO;
+      const rinnovoAdminEmailsArray = (rinnovoAdminEmailsString || '')
+        .split(',')
+        .map(email => email.trim())
+        .filter(Boolean);
+
+      if (rinnovoAdminEmailsArray.length === 0) {
+        throw new Error('Destinatari admin rinnovo non configurati (EMAIL_RINNOVO_ADMIN o EMAIL_TO)');
+      }
+
       // 1. EMAIL ALL'AMMINISTRATORE
       const adminMailOptions = {
         from: `"Agility Club Labora" <${process.env.EMAIL_FROM}>`,
-        to: 'laboratrieste@gmail.com',
-        cc: 'walter.cleva@gmail.com',
+        to: rinnovoAdminEmailsArray,
         subject: `Rinnovo iscrizione - ${rinnovoData.nome} ${rinnovoData.cognome}${accountData ? ' (con account app)' : ''}`,
         html: this.generateRinnovoAdminEmailContent(rinnovoData, signatureLog, accountData),
         attachments: attachments

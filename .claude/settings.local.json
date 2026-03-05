@@ -2,7 +2,25 @@
   "permissions": {
     "allow": [
       "Bash(npm install:*)",
-      "Bash(npm start)"
+      "Bash(npm start)",
+      "Bash(taskkill:*)",
+      "Bash(node:*)",
+      "Bash(timeout /t 3)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(dir /b /s firebaseConfig* 2)",
+      "Bash(nul)",
+      "Bash(dir /b /s firebase* 2)",
+      "Bash(where node)",
+      "Bash(curl:*)",
+      "Bash(set:*)",
+      "Bash(dir /b /s .env* 2)",
+      "Bash(nslookup:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

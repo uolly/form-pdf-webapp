@@ -232,7 +232,7 @@ router.post('/upload',
             } else {
                 console.log('📧 MODALITÀ TEST: Invio email disabilitato (DISABLE_EMAIL_SENDING=true)');
                 console.log(`   Email socio: ${result.handler.email}`);
-                console.log(`   Email admin: ${process.env.EMAIL_TO}`);
+                console.log(`   Email admin: ${process.env.EMAIL_CERTIFICATO_ADMIN || process.env.EMAIL_TO}`);
             }
 
             res.json({
@@ -408,8 +408,15 @@ async function sendNotificationEmailToAdmin(handler, file, expiryDate, temporary
     `;
 
     // Invia all'amministrazione - supporta email multiple separate da virgola
-    const adminEmailsString = process.env.EMAIL_TO || 'laboratrieste@gmail.com';
-    const adminEmailsArray = adminEmailsString.split(',').map(email => email.trim());
+    const adminEmailsString = process.env.EMAIL_CERTIFICATO_ADMIN || process.env.EMAIL_TO;
+    const adminEmailsArray = (adminEmailsString || '')
+        .split(',')
+        .map(email => email.trim())
+        .filter(Boolean);
+
+    if (adminEmailsArray.length === 0) {
+        throw new Error('Destinatari admin certificato non configurati (EMAIL_CERTIFICATO_ADMIN o EMAIL_TO)');
+    }
 
     await emailService.sendEmail({
         to: adminEmailsArray,
