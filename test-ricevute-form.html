@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emissione Ricevuta</title>
+    <style>
+        /* Variabili CSS */
+        :root {
+            --rcv-primary: #2c3e50;
+            --rcv-primary-dark: #1a252f;
+            --rcv-success: #27ae60;
+            --rcv-danger: #e74c3c;
+            --rcv-warning: #f39c12;
+            --rcv-light: #ecf0f1;
+            --rcv-border: #bdc3c7;
+            --rcv-text: #2c3e50;
+            --rcv-text-muted: #7f8c8d;
+            --rcv-radius: 6px;
+            --rcv-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            --rcv-transition: all 0.3s ease;
+        }
+
+        /* Reset e base */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--rcv-text);
+            background-color: var(--rcv-light);
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* Container principale */
+        .rcv-container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: var(--rcv-radius);
+            box-shadow: var(--rcv-shadow);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .rcv-header {
+            background: linear-gradient(135deg, var(--rcv-primary) 0%, var(--rcv-primary-dark) 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .rcv-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 300;
+        }
+
+        .rcv-header p {
+            margin: 10px 0 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        /* Body del form */
+        .rcv-body {
+            padding: 30px;
+        }
+
+        /* Sezioni */
+        .rcv-section {
+            margin-bottom: 30px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid var(--rcv-light);
+        }
+
+        .rcv-section:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .rcv-section-title {
+            font-size: 1.1rem;
+            color: var(--rcv-primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+        }
+
+        .rcv-section-icon {
+            width: 30px;
+            height: 30px;
+            background: var(--rcv-primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        /* Grid per form */
+        .rcv-grid {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        .rcv-group {
+            position: relative;
+        }
+
+        .rcv-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        /* Labels */
+        .rcv-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--rcv-text);
+        }
+
+        .rcv-required::after {
+            content: " *";
+            color: var(--rcv-danger);
+        }
+
+        /* Input fields */
+        .rcv-input,
+        .rcv-select,
+        .rcv-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid var(--rcv-border);
+            border-radius: var(--rcv-radius);
+            font-size: 16px;
+            transition: var(--rcv-transition);
+            background-color: white;
+        }
+
+        .rcv-input:focus,
+        .rcv-select:focus,
+        .rcv-textarea:focus {
+            outline: none;
+            border-color: var(--rcv-primary);
+            box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.1);
+        }
+
+        /* Numero ricevuta con incremento */
+        .rcv-number-group {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .rcv-number-input {
+            flex: 1;
+        }
+
+        .rcv-btn-increment {
+            padding: 10px 15px;
+            background: var(--rcv-primary);
+            color: white;
+            border: none;
+            border-radius: var(--rcv-radius);
+            cursor: pointer;
+            transition: var(--rcv-transition);
+            font-size: 14px;
+        }
+
+        .rcv-btn-increment:hover {
+            background: var(--rcv-primary-dark);
+        }
+
+        /* Autocompletamento per entrambi i campi */
+        .rcv-autocomplete {
+            position: relative;
+        }
+
+        .rcv-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid var(--rcv-border);
+            border-top: none;
+            border-radius: 0 0 var(--rcv-radius) var(--rcv-radius);
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+            box-shadow: var(--rcv-shadow);
+        }
+
+        .rcv-suggestion {
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .rcv-suggestion:hover,
+        .rcv-suggestion.active {
+            background: var(--rcv-light);
+        }
+
+        .rcv-suggestion-email {
+            font-weight: 500;
+            color: var(--rcv-primary);
+        }
+
+        .rcv-suggestion-name {
+            font-size: 0.9rem;
+            color: var(--rcv-text-muted);
+        }
+
+        /* Causale generica */
+        #causaleGenerica {
+            display: none;
+            margin-top: 10px;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Radio buttons stilizzati */
+        .rcv-radio-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .rcv-radio-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 8px 15px;
+            border: 2px solid var(--rcv-border);
+            border-radius: var(--rcv-radius);
+            transition: var(--rcv-transition);
+        }
+
+        .rcv-radio-label:hover {
+            border-color: var(--rcv-primary);
+        }
+
+        .rcv-radio {
+            margin-right: 8px;
+        }
+
+        .rcv-radio:checked + .rcv-radio-text {
+            font-weight: 500;
+        }
+
+        .rcv-radio-label:has(.rcv-radio:checked) {
+            background: var(--rcv-light);
+            border-color: var(--rcv-primary);
+        }
+
+        /* Submit button */
+        .rcv-submit-wrapper {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .rcv-submit {
+            background: linear-gradient(135deg, var(--rcv-success) 0%, #229a4d 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--rcv-transition);
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .rcv-submit:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+        }
+
+        .rcv-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Spinner */
+        .rcv-spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+
+        .rcv-loading .rcv-spinner {
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Modal/Popup */
+        .rcv-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .rcv-modal {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .rcv-modal-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+        }
+
+        .rcv-modal-icon.success {
+            background: var(--rcv-success);
+            color: white;
+        }
+
+        .rcv-modal-icon.error {
+            background: var(--rcv-danger);
+            color: white;
+        }
+
+        .rcv-modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--rcv-text);
+        }
+
+        .rcv-modal-message {
+            color: var(--rcv-text-muted);
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .rcv-modal-btn {
+            background: var(--rcv-primary);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--rcv-transition);
+        }
+
+        .rcv-modal-btn:hover {
+            background: var(--rcv-primary-dark);
+        }
+
+        /* Alert messages inline */
+        .rcv-alert {
+            padding: 15px 20px;
+            border-radius: var(--rcv-radius);
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .rcv-alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .rcv-alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .rcv-body {
+                padding: 20px;
+            }
+
+            .rcv-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .rcv-radio-group {
+                flex-direction: column;
+            }
+
+            .rcv-submit {
+                width: 100%;
+            }
+
+            .rcv-modal {
+                margin: 20px;
+            }
+        }
+
+        /* Preview numero ricevuta */
+        .rcv-preview {
+            font-size: 0.9rem;
+            color: var(--rcv-text-muted);
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Modal per conferma -->
+    <div id="confirmModal" class="rcv-modal-overlay">
+        <div class="rcv-modal">
+            <div id="confirmIcon" class="rcv-modal-icon" style="background: var(--rcv-warning); color: white;">
+                <span>⚠</span>
+            </div>
+            <div id="confirmTitle" class="rcv-modal-title">Conferma Operazione</div>
+            <div id="confirmMessage" class="rcv-modal-message">
+                <!-- Messaggio dinamico -->
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button id="confirmCancelBtn" class="rcv-modal-btn" style="background: var(--rcv-text-muted);">Annulla</button>
+                <button id="confirmOkBtn" class="rcv-modal-btn" style="background: var(--rcv-success);">Conferma</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal per feedback -->
+    <div id="rcvModal" class="rcv-modal-overlay">
+        <div class="rcv-modal">
+            <div id="modalIcon" class="rcv-modal-icon">
+                <span id="modalIconText">✓</span>
+            </div>
+            <div id="modalTitle" class="rcv-modal-title">Ricevuta Emessa!</div>
+            <div id="modalMessage" class="rcv-modal-message">
+                La ricevuta è stata generata con successo e le email sono state inviate.
+            </div>
+            <button id="modalBtn" class="rcv-modal-btn">Continua</button>
+        </div>
+    </div>
+
+    <div class="rcv-container">
+        <div class="rcv-header">
+            <h1>Emissione Ricevuta</h1>
+            <p>Agility Club Labora</p>
+        </div>
+
+        <div class="rcv-body">
+            <div id="rcvAlert" class="rcv-alert"></div>
+
+            <form id="ricevutaForm">
+                <!-- Sezione Numero e Data -->
+                <div class="rcv-section">
+                    <div class="rcv-section-title">
+                        <span class="rcv-section-icon">1</span>
+                        Dati Ricevuta
+                    </div>
+                    
+                    <div class="rcv-grid">
+                        <div class="rcv-group">
+                            <label for="numeroRicevuta" class="rcv-label rcv-required">Numero Ricevuta</label>
+                            <div class="rcv-number-group">
+                                <div class="rcv-number-input">
+                                    <input type="number" id="numeroRicevuta" name="numeroRicevuta" class="rcv-input" required min="1">
+                                    <div class="rcv-preview" id="numeroPreview">Ultimo numero utilizzato: -</div>
+                                </div>
+                                <button type="button" class="rcv-btn-increment" id="btnIncrement" title="Usa numero successivo">
+                                    +1
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="rcv-group">
+                            <label for="dataRicevuta" class="rcv-label rcv-required">Data Ricevuta</label>
+                            <input type="date" id="dataRicevuta" name="dataRicevuta" class="rcv-input" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sezione Pagante -->
+                <div class="rcv-section">
+                    <div class="rcv-section-title">
+                        <span class="rcv-section-icon">2</span>
+                        Dati Pagante
+                    </div>
+                    
+                    <div class="rcv-grid">
+                        <div class="rcv-group">
+                            <label for="ricevutoDa" class="rcv-label rcv-required">Ricevuto da</label>
+                            <div class="rcv-autocomplete">
+                                <input type="text" id="ricevutoDa" name="ricevutoDa" class="rcv-input" required placeholder="Nome e Cognome" autocomplete="off">
+                                <div id="nomeSuggestions" class="rcv-suggestions"></div>
+                            </div>
+                        </div>
+
+                        <div class="rcv-group">
+                            <label for="emailPagante" class="rcv-label rcv-required">Email Pagante</label>
+                            <div class="rcv-autocomplete">
+                                <input type="email" id="emailPagante" name="emailPagante" class="rcv-input" required placeholder="email@esempio.com" autocomplete="off">
+                                <div id="emailSuggestions" class="rcv-suggestions"></div>
+                            </div>
+                        </div>
+
+                        <div class="rcv-group">
+                            <label for="pseudonimo" class="rcv-label">Pseudonimo (opzionale)</label>
+                            <input type="text" id="pseudonimo" name="pseudonimo" class="rcv-input" placeholder="Pseudonimo per il foglio educatore" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sezione Dettagli Pagamento -->
+                <div class="rcv-section">
+                    <div class="rcv-section-title">
+                        <span class="rcv-section-icon">3</span>
+                        Dettagli Pagamento
+                    </div>
+                    
+                    <div class="rcv-grid">
+                        <div class="rcv-group full-width">
+                            <label for="ricevutaPer" class="rcv-label rcv-required">Ricevuta per</label>
+                            <select id="ricevutaPer" name="ricevutaPer" class="rcv-select" required>
+                                <option value="">Seleziona causale...</option>
+                                <option value="10 lezioni di agility/hoopers">10 lezioni di agility/hoopers</option>
+                                <option value="10 lezioni di educazione">10 lezioni di educazione</option>
+                                <option value="5 lezioni di educazione">5 lezioni di educazione</option>
+                                <option value="Lezione singola">Lezione singola</option>
+                                <option value="Quota associativa">Quota associativa</option>
+                                <option value="Colloquio e valutazione del cane">Colloquio e valutazione del cane</option>
+                                <option value="generico">Altro (specifica)</option>
+                            </select>
+                            
+                            <div id="causaleGenerica" class="rcv-group">
+                                <input type="text" id="causalePersonalizzata" name="causalePersonalizzata" class="rcv-input" placeholder="Inserisci causale personalizzata">
+                            </div>
+                        </div>
+
+                        <div class="rcv-group">
+                            <label for="denaroRicevuto" class="rcv-label rcv-required">Importo (€)</label>
+                            <input type="number" id="denaroRicevuto" name="denaroRicevuto" class="rcv-input" required min="0" step="0.01" placeholder="0.00">
+                        </div>
+
+                        <div class="rcv-group">
+                            <label class="rcv-label rcv-required">Modalità di pagamento</label>
+                            <div class="rcv-radio-group">
+                                <label class="rcv-radio-label">
+                                    <input type="radio" name="modalitaPagamento" value="contanti" class="rcv-radio" required>
+                                    <span class="rcv-radio-text">Contanti</span>
+                                </label>
+                                <label class="rcv-radio-label">
+                                    <input type="radio" name="modalitaPagamento" value="bonifico" class="rcv-radio" required>
+                                    <span class="rcv-radio-text">Bonifico</span>
+                                </label>
+                                <label class="rcv-radio-label">
+                                    <input type="radio" name="modalitaPagamento" value="pos" class="rcv-radio" required>
+                                    <span class="rcv-radio-text">POS</span>
+                                </label>
+                                <label class="rcv-radio-label">
+                                    <input type="radio" name="modalitaPagamento" value="paypal" class="rcv-radio" required>
+                                    <span class="rcv-radio-text">PayPal</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="rcv-group">
+                            <label for="educatoreTecnico" class="rcv-label rcv-required">Educatore/Tecnico</label>
+                            <select id="educatoreTecnico" name="educatoreTecnico" class="rcv-select" required>
+                                <option value="">Seleziona...</option>
+                                <option value="Walter">Walter</option>
+                                <option value="Luciana">Luciana</option>
+                                <option value="Erika">Erika</option>                             
+                                <option value="Generico">Generico</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sezione Invio Ricevuta -->
+                <div class="rcv-section">
+                    <div class="rcv-group">
+                        <label class="rcv-radio-label" style="border: 3px solid var(--rcv-success); background: #f0f9ff; padding: 15px; border-radius: var(--rcv-radius); font-size: 1.1rem;">
+                            <input type="checkbox" id="inviaRicevuta" name="inviaRicevuta" checked style="width: 20px; height: 20px; margin-right: 10px;">
+                            <span style="font-weight: 600; color: var(--rcv-success);">INVIA RICEVUTA</span>
+                        </label>
+                        <div style="margin-top: 10px; font-size: 0.9rem; color: var(--rcv-text-muted); padding-left: 30px;">
+                            <strong>Se deselezionato:</strong><br>
+                            • Non verrà generata la ricevuta<br>
+                            • Non verranno inviate email<br>
+                            • <strong style="color: var(--rcv-warning);">La registrazione serve solo a definire i compensi dell'istruttore</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <div class="rcv-submit-wrapper">
+                    <button type="submit" class="rcv-submit" id="submitBtn">
+                        <span id="btnText">Emetti Ricevuta</span>
+                        <span class="rcv-spinner"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+        
+        // Configurazione
+        const API_URL = 'https://form-pdf-webapp.onrender.com/api/ricevute';
+        
+        // Cache elementi DOM
+        const form = document.getElementById('ricevutaForm');
+        const numeroInput = document.getElementById('numeroRicevuta');
+        const numeroPreview = document.getElementById('numeroPreview');
+        const btnIncrement = document.getElementById('btnIncrement');
+        const dataInput = document.getElementById('dataRicevuta');
+        const ricevutaPerSelect = document.getElementById('ricevutaPer');
+        const denaroRicevutoInput = document.getElementById('denaroRicevuto');
+        const causaleGenerica = document.getElementById('causaleGenerica');
+        const causalePersonalizzata = document.getElementById('causalePersonalizzata');
+        
+        // Campi con autocompletamento
+        const nomeInput = document.getElementById('ricevutoDa');
+        const nomeSuggestionsDiv = document.getElementById('nomeSuggestions');
+        const emailInput = document.getElementById('emailPagante');
+        const emailSuggestionsDiv = document.getElementById('emailSuggestions');
+        
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const alertDiv = document.getElementById('rcvAlert');
+        
+        // Modal elementi
+        const modal = document.getElementById('rcvModal');
+        const modalIcon = document.getElementById('modalIcon');
+        const modalIconText = document.getElementById('modalIconText');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalBtn = document.getElementById('modalBtn');
+
+        // Modal conferma elementi
+        const confirmModal = document.getElementById('confirmModal');
+        const confirmMessage = document.getElementById('confirmMessage');
+        const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+        const confirmOkBtn = document.getElementById('confirmOkBtn');
+        
+        // Stato
+        let ultimoNumero = 0;
+        let contatti = [];
+        let selectedSuggestionIndex = -1;
+        let activeField = null;
+        const importiPredefiniti = {
+            '10 lezioni di agility/hoopers': '150',
+            '10 lezioni di educazione': '250',
+            '5 lezioni di educazione': '125',
+            'Lezione singola': '25',
+            'Colloquio e valutazione del cane': '25',
+            'Quota associativa': '15'
+        };
+        
+        // Inizializzazione
+        async function init() {
+            // Imposta data odierna
+            dataInput.value = new Date().toISOString().split('T')[0];
+            
+            // Carica ultimo numero e contatti
+            try {
+                const response = await fetch(`${API_URL}/init`);
+                const data = await response.json();
+                
+                ultimoNumero = data.ultimoNumero || 0;
+                contatti = data.contatti || [];
+                
+                numeroInput.value = ultimoNumero + 1;
+                numeroPreview.textContent = `Ultimo numero utilizzato: ${ultimoNumero}`;
+                
+                console.log('Contatti caricati:', contatti.length);
+            } catch (error) {
+                console.error('Errore caricamento dati:', error);
+            }
+        }
+        
+        // Gestione numero progressivo
+        btnIncrement.addEventListener('click', () => {
+            const currentValue = parseInt(numeroInput.value) || 0;
+            numeroInput.value = currentValue + 1;
+        });
+        
+        // Gestione causale personalizzata
+        ricevutaPerSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'generico') {
+                causaleGenerica.style.display = 'block';
+                causalePersonalizzata.required = true;
+            } else {
+                causaleGenerica.style.display = 'none';
+                causalePersonalizzata.required = false;
+                causalePersonalizzata.value = '';
+            }
+
+            denaroRicevutoInput.value = importiPredefiniti[e.target.value] || '';
+        });
+        
+        // Funzione di ricerca migliorata
+        function searchContacts(query) {
+            if (query.length < 2) return [];
+            
+            const lowerQuery = query.toLowerCase();
+            
+            return contatti.filter(contact => {
+                const matchEmail = contact.email.toLowerCase().includes(lowerQuery);
+                const matchNome = contact.nome.toLowerCase().includes(lowerQuery);
+                const matchCognome = contact.cognome.toLowerCase().includes(lowerQuery);
+                const matchFullName = `${contact.nome} ${contact.cognome}`.toLowerCase().includes(lowerQuery);
+                
+                return matchEmail || matchNome || matchCognome || matchFullName;
+            });
+        }
+        
+        // Autocompletamento per campo NOME
+        nomeInput.addEventListener('input', (e) => {
+            const value = e.target.value;
+            activeField = 'nome';
+            selectedSuggestionIndex = -1;
+            
+            if (value.length < 2) {
+                nomeSuggestionsDiv.style.display = 'none';
+                return;
+            }
+            
+            const filtered = searchContacts(value);
+            
+            if (filtered.length > 0) {
+                renderSuggestions(filtered, nomeSuggestionsDiv);
+                nomeSuggestionsDiv.style.display = 'block';
+                emailSuggestionsDiv.style.display = 'none';
+            } else {
+                nomeSuggestionsDiv.style.display = 'none';
+            }
+        });
+        
+        // Autocompletamento per campo EMAIL
+        emailInput.addEventListener('input', (e) => {
+            const value = e.target.value;
+            activeField = 'email';
+            selectedSuggestionIndex = -1;
+            
+            if (value.length < 2) {
+                emailSuggestionsDiv.style.display = 'none';
+                return;
+            }
+            
+            const filtered = searchContacts(value);
+            
+            if (filtered.length > 0) {
+                renderSuggestions(filtered, emailSuggestionsDiv);
+                emailSuggestionsDiv.style.display = 'block';
+                nomeSuggestionsDiv.style.display = 'none';
+            } else {
+                emailSuggestionsDiv.style.display = 'none';
+            }
+        });
+        
+        // Navigazione tastiera per entrambi i campi
+        function addKeyboardNavigation(inputElement, suggestionsElement) {
+            inputElement.addEventListener('keydown', (e) => {
+                const suggestions = suggestionsElement.querySelectorAll('.rcv-suggestion');
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, suggestions.length - 1);
+                    updateSelectedSuggestion(suggestions);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
+                    updateSelectedSuggestion(suggestions);
+                } else if (e.key === 'Enter' && selectedSuggestionIndex >= 0) {
+                    e.preventDefault();
+                    suggestions[selectedSuggestionIndex].click();
+                } else if (e.key === 'Escape') {
+                    suggestionsElement.style.display = 'none';
+                }
+            });
+        }
+        
+        addKeyboardNavigation(nomeInput, nomeSuggestionsDiv);
+        addKeyboardNavigation(emailInput, emailSuggestionsDiv);
+        
+        // Chiudi suggerimenti quando si clicca fuori
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.rcv-autocomplete')) {
+                nomeSuggestionsDiv.style.display = 'none';
+                emailSuggestionsDiv.style.display = 'none';
+            }
+        });
+        
+        function renderSuggestions(filtered, suggestionsElement) {
+            suggestionsElement.innerHTML = filtered.map((contact, index) => `
+                <div class="rcv-suggestion" 
+                     data-index="${index}" 
+                     data-email="${contact.email}" 
+                     data-nome="${contact.nome}" 
+                     data-cognome="${contact.cognome}"
+                     data-fullname="${contact.nome} ${contact.cognome}">
+                    <div class="rcv-suggestion-email">${contact.email}</div>
+                    <div class="rcv-suggestion-name">${contact.nome} ${contact.cognome}</div>
+                </div>
+            `).join('');
+            
+            // Aggiungi listener ai suggerimenti
+            suggestionsElement.querySelectorAll('.rcv-suggestion').forEach(el => {
+                el.addEventListener('click', () => {
+                    // Compila entrambi i campi
+                    nomeInput.value = el.dataset.fullname;
+                    emailInput.value = el.dataset.email;
+                    
+                    // Chiudi tutti i suggerimenti
+                    nomeSuggestionsDiv.style.display = 'none';
+                    emailSuggestionsDiv.style.display = 'none';
+                });
+                
+                el.addEventListener('mouseenter', () => {
+                    selectedSuggestionIndex = parseInt(el.dataset.index);
+                    updateSelectedSuggestion(suggestionsElement.querySelectorAll('.rcv-suggestion'));
+                });
+            });
+        }
+        
+        function updateSelectedSuggestion(suggestions) {
+            suggestions.forEach((el, index) => {
+                el.classList.toggle('active', index === selectedSuggestionIndex);
+            });
+        }
+        
+        // Gestione modal
+        function showModal(type, title, message) {
+            modalIconText.textContent = type === 'success' ? '✓' : '✗';
+            modalIcon.className = `rcv-modal-icon ${type}`;
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modal.style.display = 'flex';
+        }
+        
+        function hideModal() {
+            modal.style.display = 'none';
+        }
+        
+        modalBtn.addEventListener('click', hideModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) hideModal();
+        });
+
+        // Gestione modal conferma
+        function showConfirmModal(message) {
+            return new Promise((resolve) => {
+                confirmMessage.innerHTML = message;
+                confirmModal.style.display = 'flex';
+
+                const handleConfirm = () => {
+                    confirmModal.style.display = 'none';
+                    confirmOkBtn.removeEventListener('click', handleConfirm);
+                    confirmCancelBtn.removeEventListener('click', handleCancel);
+                    resolve(true);
+                };
+
+                const handleCancel = () => {
+                    confirmModal.style.display = 'none';
+                    confirmOkBtn.removeEventListener('click', handleConfirm);
+                    confirmCancelBtn.removeEventListener('click', handleCancel);
+                    resolve(false);
+                };
+
+                confirmOkBtn.addEventListener('click', handleConfirm);
+                confirmCancelBtn.addEventListener('click', handleCancel);
+            });
+        }
+
+        // Gestione invio form
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Controlla se l'utente vuole inviare la ricevuta o meno
+            const inviaRicevuta = document.getElementById('inviaRicevuta').checked;
+
+            // Mostra popup di conferma
+            let confirmMessage;
+            if (inviaRicevuta) {
+                confirmMessage = `
+                    <strong style="color: var(--rcv-success);">Stai per INVIARE la ricevuta</strong><br><br>
+                    Verranno eseguite le seguenti operazioni:<br>
+                    • Generazione PDF della ricevuta<br>
+                    • Invio email al pagante e all'amministrazione<br>
+                    • Salvataggio nel foglio "Ricevute"<br>
+                    ${document.querySelector('input[name="modalitaPagamento"]:checked')?.value === 'contanti' ? '• Salvataggio nel foglio "Cassa"<br>' : ''}
+                    • Salvataggio nel foglio educatore<br><br>
+                    <strong>Sei sicuro di voler procedere?</strong>
+                `;
+            } else {
+                confirmMessage = `
+                    <strong style="color: var(--rcv-danger);">Stai per NON INVIARE la ricevuta</strong><br><br>
+                    Verranno eseguite SOLO le seguenti operazioni:<br>
+                    • Salvataggio nel foglio educatore<br>
+                    ${document.querySelector('input[name="modalitaPagamento"]:checked')?.value === 'contanti' ? '• Salvataggio nel foglio "Cassa b" (senza ricevuta)<br>' : ''}
+                    <br>
+                    <strong style="color: var(--rcv-danger);">NON</strong> verranno:<br>
+                    • Generato il PDF della ricevuta<br>
+                    • Inviate email<br>
+                    • Salvati dati nel foglio "Ricevute"<br>
+                    • <strong style="color: var(--rcv-warning);">Il numero ricevuta NON verrà incrementato</strong><br><br>
+                    <strong>Sei sicuro di voler procedere SENZA ricevuta?</strong>
+                `;
+            }
+
+            const confirmed = await showConfirmModal(confirmMessage);
+
+            if (!confirmed) {
+                return; // L'utente ha annullato
+            }
+            
+            // Disabilita submit
+            submitBtn.disabled = true;
+            submitBtn.classList.add('rcv-loading');
+            btnText.textContent = 'Generazione in corso...';
+            
+            // Raccogli dati
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+
+            // Gestisci checkbox inviaRicevuta (converte in boolean)
+            data.inviaRicevuta = document.getElementById('inviaRicevuta').checked;
+
+            // Gestisci causale personalizzata
+            if (data.ricevutaPer === 'generico') {
+                data.ricevutaPer = data.causalePersonalizzata;
+            }
+            delete data.causalePersonalizzata;
+
+            // Aggiungi simbolo euro all'importo per il PDF
+            data.denaroRicevutoPDF = `€ ${parseFloat(data.denaroRicevuto).toFixed(2)}`;
+            
+            try {
+                const response = await fetch(`${API_URL}/submit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    // Mostra modal di successo con messaggio dinamico
+                    const message = data.inviaRicevuta
+                        ? `La ricevuta n. ${data.numeroRicevuta} è stata generata con successo e le email sono state inviate.`
+                        : 'Dati salvati con successo. Nessuna ricevuta generata.';
+
+                    showModal(
+                        'success',
+                        data.inviaRicevuta ? 'Ricevuta Emessa!' : 'Operazione Completata',
+                        message
+                    );
+
+                    // Aggiorna ultimo numero SOLO se è stata inviata la ricevuta
+                    if (data.inviaRicevuta) {
+                        ultimoNumero = parseInt(data.numeroRicevuta);
+                        numeroPreview.textContent = `Ultimo numero utilizzato: ${ultimoNumero}`;
+                        numeroInput.value = ultimoNumero + 1;
+                    }
+                    // Se NON è stata inviata la ricevuta, mantieni lo stesso numero
+                    // (per poterlo usare nella prossima ricevuta vera)
+
+                    // Reset form (tranne numero)
+                    const numeroValue = numeroInput.value;
+                    form.reset();
+                    numeroInput.value = numeroValue;
+                    dataInput.value = new Date().toISOString().split('T')[0];
+                    // Ripristina checkbox a checked
+                    document.getElementById('inviaRicevuta').checked = true;
+                    
+                } else {
+                    // Mostra modal di errore
+                    showModal(
+                        'error',
+                        'Errore nell\'invio',
+                        result.error || 'Si è verificato un errore durante l\'emissione della ricevuta. Riprova.'
+                    );
+                }
+                
+            } catch (error) {
+                console.error('Errore connessione:', error);
+                showModal(
+                    'error',
+                    'Errore di connessione',
+                    'Impossibile connettersi al server. Verifica la connessione e riprova.'
+                );
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('rcv-loading');
+                btnText.textContent = 'Emetti Ricevuta';
+            }
+        });
+        
+        function showAlert(type, message) {
+            alertDiv.className = `rcv-alert rcv-alert-${type}`;
+            alertDiv.textContent = message;
+            alertDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                alertDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Inizializza al caricamento
+        init();
+    })();
+    </script>
+</body>
+</html>
