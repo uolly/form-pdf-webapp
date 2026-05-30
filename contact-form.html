@@ -229,6 +229,11 @@
   </div>
 
   <script>
+    const CONTACT_API_BASE_URL = window.CONTACT_API_BASE_URL ||
+      (window.location.hostname === 'www.agilityclublabora.com' || window.location.hostname === 'agilityclublabora.com'
+        ? 'https://form-pdf-webapp.onrender.com'
+        : '');
+
     const form = document.getElementById('contactForm');
     const errorBox = document.getElementById('errorBox');
     const modal = document.getElementById('successModal');
@@ -262,7 +267,7 @@
       };
 
       try {
-        const response = await fetch('/api/contact/submit', {
+        const response = await fetch(`${CONTACT_API_BASE_URL}/api/contact/submit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)

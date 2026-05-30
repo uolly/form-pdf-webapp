@@ -52,6 +52,8 @@ const allowedOrigins = [
   'http://127.0.0.1:8080',
   'http://127.0.0.1:3000',
   process.env.WORDPRESS_URL,
+  'https://www.agilityclublabora.com',
+  'https://agilityclublabora.com',
   'https://form-pdf-webapp.onrender.com' // Aggiungi il tuo URL Render qui
 ];
     
