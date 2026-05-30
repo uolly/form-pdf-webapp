@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contatti | Agility Club La Bora</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      color: #24313f;
+      background: #f4f7f9;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+
+    .panel {
+      width: 100%;
+      max-width: 720px;
+      background: #ffffff;
+      border: 1px solid #d9e4ea;
+      border-radius: 8px;
+      padding: 32px;
+      box-shadow: 0 10px 30px rgba(36, 49, 63, 0.08);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 32px;
+      line-height: 1.2;
+      color: #156082;
+    }
+
+    .intro {
+      margin: 0 0 28px;
+      color: #566675;
+      line-height: 1.5;
+    }
+
+    .field {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-weight: 700;
+      color: #24313f;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      border: 1px solid #b9c8d2;
+      border-radius: 6px;
+      padding: 12px 14px;
+      font: inherit;
+      color: #24313f;
+      background: #ffffff;
+    }
+
+    textarea {
+      min-height: 160px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: 3px solid rgba(27, 169, 224, 0.25);
+      border-color: #1ba9e0;
+    }
+
+    .privacy-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin: 22px 0;
+      line-height: 1.45;
+    }
+
+    .privacy-row input {
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      flex: 0 0 18px;
+    }
+
+    a {
+      color: #0b7299;
+      font-weight: 700;
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 6px;
+      background: #156082;
+      color: #ffffff;
+      padding: 14px 18px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0f4f6c;
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.7;
+    }
+
+    .error {
+      display: none;
+      margin: 18px 0 0;
+      padding: 12px 14px;
+      border: 1px solid #f0b4b4;
+      border-radius: 6px;
+      background: #fff0f0;
+      color: #8a1f1f;
+      line-height: 1.4;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(15, 31, 43, 0.5);
+    }
+
+    .modal.is-open {
+      display: flex;
+    }
+
+    .modal-content {
+      width: min(100%, 420px);
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 28px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(15, 31, 43, 0.25);
+    }
+
+    .modal-content h2 {
+      margin: 0 0 10px;
+      color: #156082;
+    }
+
+    .modal-content p {
+      margin: 0 0 20px;
+      color: #566675;
+      line-height: 1.5;
+    }
+
+    .modal-content button {
+      width: auto;
+      min-width: 120px;
+    }
+
+    @media (max-width: 560px) {
+      .panel {
+        padding: 24px 18px;
+      }
+
+      h1 {
+        font-size: 27px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="panel">
+      <h1>Contattaci</h1>
+      <p class="intro">Compila il modulo e ti risponderemo appena possibile.</p>
+
+      <form id="contactForm" novalidate>
+        <div class="field">
+          <label for="nome">Nome *</label>
+          <input id="nome" name="nome" type="text" autocomplete="name" required maxlength="120">
+        </div>
+
+        <div class="field">
+          <label for="email">Email *</label>
+          <input id="email" name="email" type="email" autocomplete="email" required>
+        </div>
+
+        <div class="field">
+          <label for="oggetto">Oggetto</label>
+          <input id="oggetto" name="oggetto" type="text" maxlength="180">
+        </div>
+
+        <div class="field">
+          <label for="messaggio">Messaggio *</label>
+          <textarea id="messaggio" name="messaggio" required maxlength="5000"></textarea>
+        </div>
+
+        <label class="privacy-row" for="privacy">
+          <input id="privacy" name="privacy" type="checkbox" value="true" required>
+          <span>Ho letto e accetto la <a href="/privacy-contatti" target="_blank" rel="noopener">privacy policy</a> sul trattamento dei dati personali. *</span>
+        </label>
+
+        <button type="submit">Invia messaggio</button>
+        <div id="errorBox" class="error" role="alert"></div>
+      </form>
+    </section>
+  </main>
+
+  <div id="successModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="successTitle">
+    <div class="modal-content">
+      <h2 id="successTitle">Messaggio inviato</h2>
+      <p>Grazie, abbiamo ricevuto la tua richiesta. Ti abbiamo inviato una email di conferma.</p>
+      <button type="button" id="closeModal">OK</button>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('contactForm');
+    const errorBox = document.getElementById('errorBox');
+    const modal = document.getElementById('successModal');
+    const closeModal = document.getElementById('closeModal');
+    const submitButton = form.querySelector('button[type="submit"]');
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.style.display = 'block';
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      errorBox.style.display = 'none';
+
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+
+      submitButton.disabled = true;
+      submitButton.textContent = 'Invio in corso...';
+
+      const formData = new FormData(form);
+      const payload = {
+        nome: formData.get('nome'),
+        email: formData.get('email'),
+        oggetto: formData.get('oggetto'),
+        messaggio: formData.get('messaggio'),
+        privacy: formData.get('privacy') === 'true'
+      };
+
+      try {
+        const response = await fetch('/api/contact/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          const validationMessage = result.errors?.map((error) => error.msg).join(' ');
+          throw new Error(validationMessage || result.error || 'Invio non riuscito.');
+        }
+
+        form.reset();
+        modal.classList.add('is-open');
+      } catch (error) {
+        showError(error.message || 'Si e verificato un errore. Riprova piu tardi.');
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Invia messaggio';
+      }
+    });
+
+    closeModal.addEventListener('click', () => {
+      modal.classList.remove('is-open');
+    });
+  </script>
+</body>
+</html>

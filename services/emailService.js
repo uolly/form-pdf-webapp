@@ -889,9 +889,129 @@ class EmailService {
     `;
   }
 
+  async sendContactEmail(contactData) {
+    const contactRecipientsString = process.env.EMAIL_CONTATTI_TO || process.env.EMAIL_TO;
+    const contactRecipients = (contactRecipientsString || '')
+      .split(',')
+      .map(email => email.trim())
+      .filter(Boolean);
+
+    if (contactRecipients.length === 0) {
+      throw new Error('Destinatari contatti non configurati (EMAIL_CONTATTI_TO o EMAIL_TO)');
+    }
+
+    const fromAddress = process.env.EMAIL_CONTATTI_FROM || process.env.EMAIL_FROM;
+    if (!fromAddress) {
+      throw new Error('Mittente contatti non configurato (EMAIL_CONTATTI_FROM o EMAIL_FROM)');
+    }
+
+    const safeSubject = contactData.oggetto || 'Richiesta di contatto';
+    const adminResult = await this.sendEmail({
+      from: `"Agility Club La Bora" <${fromAddress}>`,
+      to: contactRecipients,
+      subject: `Nuovo messaggio dal sito - ${safeSubject}`,
+      html: this.generateContactAdminEmail(contactData)
+    });
+
+    const userResult = await this.sendEmail({
+      from: `"Agility Club La Bora" <${fromAddress}>`,
+      to: contactData.email,
+      subject: 'Conferma ricezione messaggio - Agility Club La Bora',
+      html: this.generateContactUserEmail(contactData)
+    });
+
+    return {
+      success: true,
+      admin: adminResult,
+      user: userResult,
+      adminMessageId: adminResult.messageId,
+      userMessageId: userResult.messageId
+    };
+  }
+
+  generateContactAdminEmail(contactData) {
+    const nome = this.escapeHtml(contactData.nome);
+    const email = this.escapeHtml(contactData.email);
+    const oggetto = this.escapeHtml(contactData.oggetto || 'Richiesta di contatto');
+    const messaggio = this.escapeHtml(contactData.messaggio).replace(/\n/g, '<br>');
+    const submittedAt = new Date(contactData.submittedAt).toLocaleString('it-IT');
+
+    return `
+      <!DOCTYPE html>
+      <html lang="it">
+      <head>
+        <meta charset="UTF-8">
+        <title>Nuovo messaggio dal sito</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; background: #f5f5f5;">
+        <div style="max-width: 680px; margin: 0 auto; background: #fff; border: 1px solid #ddd;">
+          <div style="background: #156082; color: #fff; padding: 22px;">
+            <h1 style="margin: 0; font-size: 22px;">Nuovo messaggio dal form contatti</h1>
+          </div>
+          <div style="padding: 24px;">
+            <p><strong>Nome:</strong> ${nome}</p>
+            <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
+            <p><strong>Oggetto:</strong> ${oggetto}</p>
+            <p><strong>Data invio:</strong> ${submittedAt}</p>
+            <div style="margin-top: 22px; padding: 16px; background: #f4f7f9; border-left: 4px solid #1ba9e0;">
+              <strong>Messaggio</strong>
+              <p style="margin-bottom: 0;">${messaggio}</p>
+            </div>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 24px 0;">
+            <p style="font-size: 12px; color: #666;">Privacy accettata: ${contactData.privacyAccepted ? 'Si' : 'No'}</p>
+            <p style="font-size: 12px; color: #666;">IP: ${this.escapeHtml(contactData.ipAddress)} - User agent: ${this.escapeHtml(contactData.userAgent)}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  generateContactUserEmail(contactData) {
+    const nome = this.escapeHtml(contactData.nome);
+    const oggetto = this.escapeHtml(contactData.oggetto || 'Richiesta di contatto');
+    const messaggio = this.escapeHtml(contactData.messaggio).replace(/\n/g, '<br>');
+
+    return `
+      <!DOCTYPE html>
+      <html lang="it">
+      <head>
+        <meta charset="UTF-8">
+        <title>Conferma ricezione messaggio</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; background: #f5f5f5;">
+        <div style="max-width: 620px; margin: 0 auto; background: #fff; border: 1px solid #ddd;">
+          <div style="background: #156082; color: #fff; padding: 22px;">
+            <h1 style="margin: 0; font-size: 22px;">Messaggio ricevuto</h1>
+          </div>
+          <div style="padding: 24px;">
+            <p>Gentile ${nome},</p>
+            <p>abbiamo ricevuto il tuo messaggio e ti risponderemo appena possibile.</p>
+            <div style="margin: 22px 0; padding: 16px; background: #f4f7f9; border-left: 4px solid #1ba9e0;">
+              <p><strong>Oggetto:</strong> ${oggetto}</p>
+              <p><strong>Messaggio:</strong><br>${messaggio}</p>
+            </div>
+            <p>Questa email conferma solo la ricezione della richiesta.</p>
+            <p>Cordiali saluti,<br><strong>Agility Club La Bora A.S.D.</strong></p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
   // Helper functions
   ensureArray(value) {
     return Array.isArray(value) ? value : [value];
+  }
+
+  escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   extractEmail(fromString) {

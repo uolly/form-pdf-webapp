@@ -35,6 +35,7 @@ const formRoutes = require('./routes/formRoutes');
 const ricevuteRoutes = require('./routes/ricevuteRoutes');
 const rinnovoRoutes = require('./routes/rinnovoRoutes');
 const certificatiRoutes = require('./routes/certificatiRoutes');
+const contactRoutes = require('./routes/contactRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -73,6 +74,15 @@ app.use('/api/form', formRoutes);
 app.use('/api/ricevute', ricevuteRoutes);
 app.use('/api/rinnovo', rinnovoRoutes);
 app.use('/api/certificati', certificatiRoutes);
+app.use('/api/contact', contactRoutes);
+
+app.get('/contatti', (req, res) => {
+  res.sendFile(__dirname + '/contact-form.html');
+});
+
+app.get('/privacy-contatti', (req, res) => {
+  res.type('text/plain').sendFile(__dirname + '/PRIVACY_POLICY_CONTATTI_GDPR.md');
+});
 
 // Serve static test forms (solo in development)
 if (process.env.NODE_ENV !== 'production') {
