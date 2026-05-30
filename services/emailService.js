@@ -453,7 +453,7 @@ class EmailService {
               ${signatureLog ? `
                 <p><strong>✓ Modulo di iscrizione:</strong> Già firmato digitalmente, non è necessario stamparlo né consegnarlo.</p>
               ` : `
-                <p><strong>Modulo di iscrizione:</strong> Il modulo allegato deve essere stampato, firmato e consegnato durante il primo appuntamento.</p>
+                <p><strong>Modulo di iscrizione:</strong> Il modulo allegato non deve essere stampato, lo si potrà firmare in campo al primo appuntamento.</p>
               `}
               <p><strong>✓ Passaporto del cane:</strong> La fotocopia del passaporto del cane con vaccinazioni aggiornate può essere inviata:</p>
               <ul style="margin: 10px 0;">
@@ -1292,7 +1292,7 @@ class EmailService {
                 Il tuo modulo è stato firmato elettronicamente e non necessita di essere stampato.</p>
               ` : `
                 <p><strong>📄 Modulo da firmare</strong><br>
-                Il modulo allegato deve essere <strong>stampato e firmato a mano</strong>, poi consegnato al campo o inviato via email/WhatsApp.</p>
+                Il modulo allegato deve essere <strong>non è necessario stamparlo</strong>, lo si potrà firmare campo.</p>
               `}
               <p><strong>💶 Pagamento quota annuale</strong></p>
               <p>Per completare il rinnovo, versa la quota annuale:</p>
@@ -1505,7 +1505,7 @@ class EmailService {
               ${signatureLog ? `
                 <p style="color: #28a745;"><strong>✓ Modulo firmato digitalmente</strong> - Non necessita firma cartacea</p>
               ` : `
-                <p style="color: #ffc107;"><strong>⚠️ Modulo da firmare a mano</strong> - Il socio deve stampare, firmare e consegnare</p>
+                <p style="color: #ffc107;"><strong>⚠️ Modulo da firmare a mano</strong> - Non è necessario stampare il modulo, lo si potrà firmare alla prima lezione in campo</p>
               `}
             </div>
 
